@@ -3210,13 +3210,13 @@ classdef MatViewerTool < matlab.apps.AppBase
             scriptPanel.FontWeight = 'bold';
             scriptPanel.FontSize = 11;
 
-            % 使用grid layout布局脚本选择面板
+            % 使用grid layout布局脚本选择面板（2行1列）
             scriptLayout = uigridlayout(scriptPanel, [2, 1]);
-            scriptLayout.RowHeight = {25, 30};
+            scriptLayout.RowHeight = {30, 30};
             scriptLayout.Padding = [10 5 10 5];
             scriptLayout.RowSpacing = 5;
 
-            % 单选按钮组
+            % 第1行：单选按钮组
             bg = uibuttongroup(scriptLayout);
             bg.BorderType = 'none';
             bg.Layout.Row = 1;
@@ -3225,22 +3225,23 @@ classdef MatViewerTool < matlab.apps.AppBase
 
             defaultScriptRadio = uiradiobutton(bg);
             defaultScriptRadio.Text = '使用默认脚本';
-            defaultScriptRadio.Position = [10 2 150 20];
+            defaultScriptRadio.Position = [10 5 150 20];
             defaultScriptRadio.Value = true;
             defaultScriptRadio.FontSize = 11;
 
             customScriptRadio = uiradiobutton(bg);
             customScriptRadio.Text = '导入自定义脚本';
-            customScriptRadio.Position = [250 2 150 20];
+            customScriptRadio.Position = [250 5 150 20];
             customScriptRadio.FontSize = 11;
 
-            % 文件选择行布局（初始隐藏）
+            % 第2行：文件选择区域（初始隐藏）
             fileSelectionPanel = uipanel(scriptLayout);
             fileSelectionPanel.Layout.Row = 2;
             fileSelectionPanel.Layout.Column = 1;
             fileSelectionPanel.BorderType = 'none';
             fileSelectionPanel.Visible = 'off';
 
+            % 文件选择区域内部布局：文件路径框 + 浏览按钮并排
             fileSelectionLayout = uigridlayout(fileSelectionPanel, [1, 2]);
             fileSelectionLayout.ColumnWidth = {'1x', 100};
             fileSelectionLayout.Padding = [0 0 0 0];
@@ -3251,14 +3252,17 @@ classdef MatViewerTool < matlab.apps.AppBase
             scriptPathField.Layout.Column = 1;
             scriptPathField.Placeholder = '未选择文件';
             scriptPathField.Editable = 'off';
-            scriptPathField.FontSize = 11;
+            scriptPathField.FontSize = 12;
 
-            % 浏览按钮
+            % 浏览按钮（与处理对象按钮格式统一）
             browseBtn = uibutton(fileSelectionLayout, 'push');
-            browseBtn.Text = '📁 浏览';
+            browseBtn.Text = '浏览文件';
             browseBtn.Layout.Row = 1;
             browseBtn.Layout.Column = 2;
+            browseBtn.Tooltip = '选择自定义脚本文件';
+            browseBtn.FontWeight = 'bold';
             browseBtn.FontSize = 10;
+            browseBtn.FontColor = [0 0 0.8];
             browseBtn.ButtonPushedFcn = createCallbackFcn(app, @selectFile, true);
             
             % ========== 参数配置 ==========
