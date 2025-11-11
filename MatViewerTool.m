@@ -4243,7 +4243,17 @@ classdef MatViewerTool < matlab.apps.AppBase
                         end
                         
                         save(outputFile, '-struct', 'saveData');
-                        
+
+                        % 检查输出目录是否有.fig文件
+                        figFiles = dir(fullfile(outputDir, '*.fig'));
+                        if ~isempty(figFiles)
+                            % 找到最新的.fig文件
+                            [~, idx] = max([figFiles.datenum]);
+                            figFilePath = fullfile(outputDir, figFiles(idx).name);
+                            % 保存.fig文件路径到processedData
+                            processedData.figure_file = figFilePath;
+                        end
+
                         % 保存到内存缓存
                         app.PreprocessingResults{frameIdx, prepIndex + 1} = processedData;
                         
@@ -4438,7 +4448,17 @@ classdef MatViewerTool < matlab.apps.AppBase
                 [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
                 outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
                 save(outputFile, '-struct', 'saveData');
-                
+
+                % 检查输出目录是否有.fig文件
+                figFiles = dir(fullfile(outputDir, '*.fig'));
+                if ~isempty(figFiles)
+                    % 找到最新的.fig文件
+                    [~, idx] = max([figFiles.datenum]);
+                    figFilePath = fullfile(outputDir, figFiles(idx).name);
+                    % 保存.fig文件路径到processedData
+                    processedData.figure_file = figFilePath;
+                end
+
                 % 保存到结果缓存
                 % 现在缓存布局：1=原图, 2=CFAR, 3=非相参积累, 4=自定义预处理
                 if isempty(app.PreprocessingResults)
@@ -5006,17 +5026,93 @@ classdef MatViewerTool < matlab.apps.AppBase
                 end
             end
             
-            % 显示图像（使用现有的显示逻辑）
-            if ~isfield(data, 'complex_matrix')
-                return;
+            % 检查是否有.fig文件需要显示
+            if isfield(data, 'figure_file') && ~isempty(data.figure_file) && isfile(data.figure_file)
+                % 加载并显示.fig文件
+                try
+                    % 加载.fig文件
+                    figHandle = openfig(data.figure_file, 'invisible');
+
+                    % 获取figure中的所有axes
+                    figAxes = findobj(figHandle, 'Type', 'axes');
+
+                    if ~isempty(figAxes)
+                        % 复制第一个axes的内容到当前axes
+                        sourceAx = figAxes(1);
+
+                        % 复制所有图形对象
+                        copyobj(allchild(sourceAx), ax);
+
+                        % 复制axes属性
+                        ax.XLim = sourceAx.XLim;
+                        ax.YLim = sourceAx.YLim;
+                        if ~isempty(sourceAx.ZLim)
+                            ax.ZLim = sourceAx.ZLim;
+                        end
+                        ax.XLabel.String = sourceAx.XLabel.String;
+                        ax.YLabel.String = sourceAx.YLabel.String;
+                        if ~isempty(sourceAx.ZLabel.String)
+                            ax.ZLabel.String = sourceAx.ZLabel.String;
+                        end
+
+                        % 复制colormap和colorbar（如果有）
+                        if ~isempty(sourceAx.Colormap)
+                            colormap(ax, sourceAx.Colormap);
+                        end
+
+                        % 检查是否有colorbar
+                        cb = findobj(figHandle, 'Type', 'colorbar');
+                        if ~isempty(cb)
+                            colorbar(ax);
+                        end
+                    end
+
+                    % 关闭临时figure
+                    close(figHandle);
+
+                catch ME
+                    % 如果加载.fig文件失败，回退到显示complex_matrix
+                    warning('加载.fig文件失败：%s，将显示复数矩阵', ME.message);
+
+                    if ~isfield(data, 'complex_matrix')
+                        return;
+                    end
+
+                    complexMatrix = data.complex_matrix;
+                    displayDefaultImage(app, ax, complexMatrix, titleStr);
+                end
+            else
+                % 没有.fig文件，显示图像（使用现有的显示逻辑）
+                if ~isfield(data, 'complex_matrix')
+                    return;
+                end
+
+                complexMatrix = data.complex_matrix;
+                displayDefaultImage(app, ax, complexMatrix, titleStr);
             end
-            
-            complexMatrix = data.complex_matrix;
-            
+            % 设置标题功能
+            if viewIndex == 1
+                % 原图：普通标题
+                title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
+            else
+                % 预处理视图：添加关闭功能
+                titleStr = sprintf('%s  [关闭×]', titleStr);
+                t = title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
+                
+                % 标题文本添加点击事件
+                t.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
+                
+                % 改变鼠标指针为手型（提示可点击）
+                ax.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
+            end
+        end
+
+        function displayDefaultImage(app, ax, complexMatrix, titleStr)
+            % 显示默认图像（复数矩阵）
             % 判断数据类型并显示
             [~, filename] = fileparts(app.MatFiles{app.CurrentIndex});
             isSAR = startsWith(lower(filename), 'sar');
-            
+
             if isSAR
                 displaySARInAxes(app, ax, complexMatrix, titleStr);
             elseif isvector(complexMatrix)
@@ -5035,23 +5131,8 @@ classdef MatViewerTool < matlab.apps.AppBase
                         displayMatrixMeshInAxes(app, ax, complexMatrix, true, titleStr);
                 end
             end
-            % 设置标题功能
-            if viewIndex == 1
-                % 原图：普通标题
-                title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
-            else
-                % 预处理视图：添加关闭功能
-                titleStr = sprintf('%s  [关闭×]', titleStr);
-                t = title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
-                
-                % 标题文本添加点击事件
-                t.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
-                
-                % 改变鼠标指针为手型（提示可点击）
-                ax.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
-            end
         end
-        
+
         function displayMatrixImagescInAxes(app, ax, complexMatrix, useDB, titleStr)
             % 在指定axes中显示imagesc图像
             view(ax, 2);
