@@ -115,37 +115,12 @@ function output_data = cfar_with_additional_outputs(input_data, params)
         fig = figure('Visible', 'off');
 
         try
-            % 创建2x2子图布局展示CFAR检测结果
-            subplot(2, 2, 1);
-            imagesc(magnitude);
-            colorbar;
-            title('输入幅度 (dB)');
-            xlabel('距离');
-            ylabel('多普勒');
-
-            subplot(2, 2, 2);
-            imagesc(training_means);
-            colorbar;
-            title('训练窗口均值');
-            xlabel('距离');
-            ylabel('多普勒');
-
-            subplot(2, 2, 3);
-            imagesc(thresholds);
-            colorbar;
-            title('CFAR阈值');
-            xlabel('距离');
-            ylabel('多普勒');
-
-            subplot(2, 2, 4);
+            % 创建单个图展示CFAR检测后的结果
             imagesc(abs(output_data.complex_matrix));
             colorbar;
-            title('检测后复数矩阵幅度');
+            title(sprintf('CFAR检测结果 - 方法:%s, 阈值因子:%.1f', method, threshold_factor));
             xlabel('距离');
             ylabel('多普勒');
-
-            % 添加总标题
-            sgtitle(sprintf('CFAR检测结果 - 方法:%s, 阈值因子:%.1f', method, threshold_factor));
 
             % 保存为.fig文件，文件名与原图同名
             fig_file_path = fullfile(output_dir, [file_name, '.fig']);

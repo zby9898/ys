@@ -5039,14 +5039,17 @@ classdef MatViewerTool < matlab.apps.AppBase
             if isfield(data, 'figure_file') && ~isempty(data.figure_file) && isfile(data.figure_file)
                 % 加载并显示.fig文件
                 try
+                    % 清空当前axes
+                    cla(ax);
+
                     % 加载.fig文件
                     figHandle = openfig(data.figure_file, 'invisible');
 
-                    % 获取figure中的所有axes
+                    % 获取figure中的axes
                     figAxes = findobj(figHandle, 'Type', 'axes');
 
                     if ~isempty(figAxes)
-                        % 复制第一个axes的内容到当前axes
+                        % 获取第一个axes（应该只有一个）
                         sourceAx = figAxes(1);
 
                         % 复制所有图形对象
@@ -5064,12 +5067,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                             ax.ZLabel.String = sourceAx.ZLabel.String;
                         end
 
-                        % 复制colormap和colorbar（如果有）
+                        % 复制colormap
                         if ~isempty(sourceAx.Colormap)
                             colormap(ax, sourceAx.Colormap);
                         end
 
-                        % 检查是否有colorbar
+                        % 检查是否有colorbar，如果有则复制
                         cb = findobj(figHandle, 'Type', 'colorbar');
                         if ~isempty(cb)
                             colorbar(ax);
