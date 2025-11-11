@@ -124,9 +124,9 @@ function output_data = cfar_with_additional_outputs(input_data, params)
             ylabel('多普勒');
 
             subplot(2, 2, 2);
-            imagesc(detected);
+            imagesc(training_means);
             colorbar;
-            title('CFAR检测结果');
+            title('训练窗口均值');
             xlabel('距离');
             ylabel('多普勒');
 
