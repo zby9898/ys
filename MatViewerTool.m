@@ -4141,6 +4141,14 @@ classdef MatViewerTool < matlab.apps.AppBase
                         continue;
                     end
                     
+                    % 创建输出目录（在调用脚本之前）
+                    [dataPath, ~, ~] = fileparts(app.MatFiles{frameIdx});
+                    outputDir = fullfile(dataPath, prepConfig.name);
+                    if ~exist(outputDir, 'dir')
+                        mkdir(outputDir);
+                    end
+                    [~, originalName, ~] = fileparts(app.MatFiles{frameIdx});
+
                     % 执行预处理
                     try
                         if strcmp(prepConfig.scriptPath, 'default')
@@ -4150,7 +4158,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                             % 调用自定义脚本
                             [scriptPath, scriptName, ~] = fileparts(prepConfig.scriptPath);
                             oldPath = addpath(scriptPath);
-                            
+
                             try
                                 % 动态替换帧信息参数
                                 actualParams = prepConfig.params;
@@ -4172,7 +4180,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                                             end
                                         end
                                     end
-                                end                               
+                                end
+
+                                % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                                actualParams.output_dir = outputDir;
+                                actualParams.file_name = originalName;
+
                                 scriptFunc = str2func(scriptName);
                                 scriptOutput = scriptFunc(inputMatrix, actualParams);
                                 
@@ -4219,16 +4232,8 @@ classdef MatViewerTool < matlab.apps.AppBase
                         if ~isempty(fieldnames(additionalOutputs))
                             processedData.additional_outputs = additionalOutputs;
                         end
-                        
+
                         % 保存到本地（只保存必要字段）
-                        [dataPath, ~, ~] = fileparts(app.MatFiles{frameIdx});
-                        outputDir = fullfile(dataPath, prepConfig.name);
-                        
-                        if ~exist(outputDir, 'dir')
-                            mkdir(outputDir);
-                        end
-                        
-                        [~, originalName, ~] = fileparts(app.MatFiles{frameIdx});
                         outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
                         
                         % 准备保存数据：包含绘图变量、帧信息和额外输出
@@ -4346,6 +4351,14 @@ classdef MatViewerTool < matlab.apps.AppBase
                     return;
                 end
                 
+                % 创建输出目录
+                [dataPath, ~, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+                outputDir = fullfile(dataPath, prepConfig.name);
+                if ~exist(outputDir, 'dir')
+                    mkdir(outputDir);
+                end
+                [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+
                 % 执行预处理
                 if strcmp(prepConfig.scriptPath, 'default')
                     % 使用默认处理（暂时返回原数据）
@@ -4354,12 +4367,13 @@ classdef MatViewerTool < matlab.apps.AppBase
                 else
                     % 调用自定义脚本
                     [scriptPath, scriptName, ~] = fileparts(prepConfig.scriptPath);
-                    
+
                     % 临时添加脚本路径
                     oldPath = addpath(scriptPath);
-                    
+
                     try
-                        % 动态替换帧信息参数 
+
+                        % 动态替换帧信息参数
                         actualParams = prepConfig.params;
                         if isfield(prepConfig, 'frameInfoParams') && ~isempty(prepConfig.frameInfoParams)
                             if isfield(currentData, 'frame_info')
@@ -4380,6 +4394,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
+
+                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                        actualParams.output_dir = outputDir;
+                        actualParams.file_name = originalName;
 
                         % 调用脚本函数
                         scriptFunc = str2func(scriptName);
@@ -4419,21 +4437,13 @@ classdef MatViewerTool < matlab.apps.AppBase
                     % 恢复路径
                     path(oldPath);
                 end
-                
-                 % 创建输出目录
-                [dataPath, ~, ~] = fileparts(app.MatFiles{app.CurrentIndex});
-                outputDir = fullfile(dataPath, prepConfig.name);
-                
-                if ~exist(outputDir, 'dir')
-                    mkdir(outputDir);
-                end
-                
+
                 % 保存处理后的数据（内存中保留完整数据）
                 processedData = currentData;
                 processedData.complex_matrix = processedMatrix;
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
-                
+
                 % 准备保存数据：包含绘图变量、帧信息和额外输出
                 saveData = struct();
                 saveData.complex_matrix = processedMatrix;
@@ -4444,8 +4454,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                 if ~isempty(fieldnames(additionalOutputs))
                     saveData.additional_outputs = additionalOutputs;
                 end
-                
-                [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+
                 outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
                 save(outputFile, '-struct', 'saveData');
 
