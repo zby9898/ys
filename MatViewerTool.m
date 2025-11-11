@@ -4642,12 +4642,23 @@ classdef MatViewerTool < matlab.apps.AppBase
                     try
                         % 准备参数（外部文件没有帧信息，只使用默认参数）
                         actualParams = prepConfig.params;
-                        
+
+                        % 获取输出目录和文件名
+                        [filePath, fileName, ~] = fileparts(inputFilePath);
+                        outputDir = fullfile(filePath, prepConfig.name);
+                        if ~exist(outputDir, 'dir')
+                            mkdir(outputDir);
+                        end
+
+                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                        actualParams.output_dir = outputDir;
+                        actualParams.file_name = fileName;
+
                         % 如果外部文件包含frame_info，也尝试使用
-                        if isfield(fileData, 'frame_info') && ... 
+                        if isfield(fileData, 'frame_info') && ...
                            isfield(prepConfig, 'frameInfoParams') && ...
                            ~isempty(prepConfig.frameInfoParams)
-                            
+
                             for k = 1:length(prepConfig.frameInfoParams)
                                 paramName = prepConfig.frameInfoParams{k};
                                 if isfield(fileData.frame_info, paramName)
@@ -4661,7 +4672,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
-                        
+
                         scriptFunc = str2func(scriptName);
                         processedMatrix = scriptFunc(inputMatrix, actualParams);
                         
@@ -4730,13 +4741,27 @@ classdef MatViewerTool < matlab.apps.AppBase
                 
                 % 5. 保存文件
                 save(outputFile, '-struct', 'saveData');
-                
+
+                % 检查输出目录是否有.fig文件
+                figFiles = dir(fullfile(outputDir, '*.fig'));
+                figFilePath = '';
+                if ~isempty(figFiles)
+                    % 找到最新的.fig文件
+                    [~, idx] = max([figFiles.datenum]);
+                    figFilePath = fullfile(outputDir, figFiles(idx).name);
+                end
+
                 % 创建处理后的数据结构，用于显示
                 processedData = struct();
                 processedData.complex_matrix = processedMatrix;
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
-                
+
+                % 保存.fig文件路径（如果存在）
+                if ~isempty(figFilePath)
+                    processedData.figure_file = figFilePath;
+                end
+
                 % 保存额外的输出信息（如果有）
                 if ~isempty(fieldnames(additionalOutputs))
                     processedData.additional_outputs = additionalOutputs;
