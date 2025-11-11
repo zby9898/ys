@@ -3210,10 +3210,17 @@ classdef MatViewerTool < matlab.apps.AppBase
             scriptPanel.FontWeight = 'bold';
             scriptPanel.FontSize = 11;
 
+            % 使用grid layout布局脚本选择面板
+            scriptLayout = uigridlayout(scriptPanel, [2, 1]);
+            scriptLayout.RowHeight = {25, 30};
+            scriptLayout.Padding = [10 5 10 5];
+            scriptLayout.RowSpacing = 5;
+
             % 单选按钮组
-            bg = uibuttongroup(scriptPanel);
+            bg = uibuttongroup(scriptLayout);
             bg.BorderType = 'none';
-            bg.Position = [10 48 690 25];
+            bg.Layout.Row = 1;
+            bg.Layout.Column = 1;
             bg.SelectionChangedFcn = createCallbackFcn(app, @onSourceChanged, true);
 
             defaultScriptRadio = uiradiobutton(bg);
@@ -3227,18 +3234,31 @@ classdef MatViewerTool < matlab.apps.AppBase
             customScriptRadio.Position = [250 2 150 20];
             customScriptRadio.FontSize = 11;
 
-            % 文件路径显示框（初始隐藏）
-            scriptPathField = uieditfield(scriptPanel, 'text');
-            scriptPathField.Position = [10 23 690 22];
+            % 文件选择行布局（初始隐藏）
+            fileSelectionPanel = uipanel(scriptLayout);
+            fileSelectionPanel.Layout.Row = 2;
+            fileSelectionPanel.Layout.Column = 1;
+            fileSelectionPanel.BorderType = 'none';
+            fileSelectionPanel.Visible = 'off';
+
+            fileSelectionLayout = uigridlayout(fileSelectionPanel, [1, 2]);
+            fileSelectionLayout.ColumnWidth = {'1x', 100};
+            fileSelectionLayout.Padding = [0 0 0 0];
+
+            % 文件路径显示框
+            scriptPathField = uieditfield(fileSelectionLayout, 'text');
+            scriptPathField.Layout.Row = 1;
+            scriptPathField.Layout.Column = 1;
             scriptPathField.Placeholder = '未选择文件';
             scriptPathField.Editable = 'off';
-            scriptPathField.Visible = 'off';
+            scriptPathField.FontSize = 11;
 
-            % 浏览按钮（初始隐藏）
-            browseBtn = uibutton(scriptPanel, 'push');
-            browseBtn.Text = '📁 浏览文件';
-            browseBtn.Position = [270 5 100 20];
-            browseBtn.Visible = 'off';
+            % 浏览按钮
+            browseBtn = uibutton(fileSelectionLayout, 'push');
+            browseBtn.Text = '📁 浏览';
+            browseBtn.Layout.Row = 1;
+            browseBtn.Layout.Column = 2;
+            browseBtn.FontSize = 10;
             browseBtn.ButtonPushedFcn = createCallbackFcn(app, @selectFile, true);
             
             % ========== 参数配置 ==========
@@ -3393,11 +3413,9 @@ classdef MatViewerTool < matlab.apps.AppBase
             
             function onSourceChanged(~, event)
                 if strcmp(event.NewValue.Text, '导入自定义脚本')
-                    scriptPathField.Visible = 'on';
-                    browseBtn.Visible = 'on';
+                    fileSelectionPanel.Visible = 'on';
                 else
-                    scriptPathField.Visible = 'off';
-                    browseBtn.Visible = 'off';
+                    fileSelectionPanel.Visible = 'off';
                     scriptPathField.Value = '';
 
                     % 如果选择"使用默认脚本"且预处理类型是CFAR或非相参积累，自动加载默认脚本
