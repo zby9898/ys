@@ -3063,21 +3063,21 @@ classdef MatViewerTool < matlab.apps.AppBase
             end
             
             % 创建对话框
-            dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 800]);
+            dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 680]);
             dlg.WindowStyle = 'modal';
 
             % 添加帮助按钮到对话框右上角
             helpBtn = uibutton(dlg, 'push');
             helpBtn.Text = '❓';
-            helpBtn.Position = [705 685 30 30];  % 右上角位置
+            helpBtn.Position = [705 635 30 30];  % 右上角位置
             helpBtn.Tooltip = '查看脚本接口规范';
             helpBtn.ButtonPushedFcn = @(~,~) showScriptHelp();
             helpBtn.BackgroundColor = [0.95 0.95 0.95];
-            
+
             mainLayout = uigridlayout(dlg, [4, 1]);
-            mainLayout.RowHeight = {70, '1x', 1, 60};
-            mainLayout.Padding = [20 20 20 20];
-            mainLayout.RowSpacing = 15;
+            mainLayout.RowHeight = {50, '1x', 1, 50};
+            mainLayout.Padding = [15 15 15 15];
+            mainLayout.RowSpacing = 10;
             
             % ========== 第1行：提示信息 ==========
             infoPanel = uipanel(mainLayout);
@@ -3086,12 +3086,12 @@ classdef MatViewerTool < matlab.apps.AppBase
             infoPanel.BorderType = 'none';
             
             infoLayout = uigridlayout(infoPanel, [1, 3]);
-            infoLayout.ColumnWidth = {40, '1x', 40};  % 改为3列，最后一列放帮助按钮
-            infoLayout.Padding = [15 15 15 15];
-            
+            infoLayout.ColumnWidth = {35, '1x', 35};  % 改为3列，最后一列放帮助按钮
+            infoLayout.Padding = [10 8 10 8];
+
             iconLabel = uilabel(infoLayout);
             iconLabel.Text = '💡';
-            iconLabel.FontSize = 24;
+            iconLabel.FontSize = 20;
             iconLabel.HorizontalAlignment = 'center';
             iconLabel.Layout.Row = 1;
             iconLabel.Layout.Column = 1;
@@ -3099,7 +3099,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             textLabel = uilabel(infoLayout);
             textLabel.Text = '提示：请选择预处理类型并配置参数，系统将自动检测脚本所需参数';
             textLabel.WordWrap = 'on';
-            textLabel.FontSize = 13;
+            textLabel.FontSize = 11;
             textLabel.Layout.Row = 1;
             textLabel.Layout.Column = 2;
             
@@ -3111,7 +3111,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             helpBtn.Tooltip = '查看脚本接口规范';
             helpBtn.ButtonPushedFcn = @(~,~) showScriptHelp();
             helpBtn.BackgroundColor = [0.85 0.90 1];
-            helpBtn.FontSize = 16;
+            helpBtn.FontSize = 14;
             
             % ========== 第2行：内容区域 ==========
             contentPanel = uipanel(mainLayout);
@@ -3119,40 +3119,39 @@ classdef MatViewerTool < matlab.apps.AppBase
             contentPanel.BorderType = 'none';
             
             contentLayout = uigridlayout(contentPanel, [5, 1]);
-            contentLayout.RowHeight = {95, 95, 95, 125, '1x'};
-            contentLayout.Padding = [10 10 10 10];
-            contentLayout.RowSpacing = 12;
+            contentLayout.RowHeight = {65, 55, 55, 85, '1x'};
+            contentLayout.Padding = [5 5 5 5];
+            contentLayout.RowSpacing = 8;
             
             % ========== 处理对象 ==========
             processObjPanel = uipanel(contentLayout);
             processObjPanel.Layout.Row = 1;
             processObjPanel.Title = '处理对象';
             processObjPanel.FontWeight = 'bold';
-            processObjPanel.FontSize = 13;
-            
-            % 修改为2行1列布局
-            processObjLayout = uigridlayout(processObjPanel, [2, 1]);
-            processObjLayout.RowHeight = {40, 40};
+            processObjPanel.FontSize = 11;
+
+            % 修改为1行2列布局（下拉框和浏览按钮并排）
+            processObjLayout = uigridlayout(processObjPanel, [1, 2]);
+            processObjLayout.ColumnWidth = {'1x', 100};
             processObjLayout.RowSpacing = 5;
-            processObjLayout.Padding = [15 15 15 15];
+            processObjLayout.Padding = [10 5 10 5];
             
-            % 第一行：下拉框和浏览按钮（在子布局中）
-            row1Layout = uigridlayout(processObjLayout, [1, 2]);
-            row1Layout.ColumnWidth = {'1x', 120}; % 增大浏览按钮列宽
-            
-            objDropdown = uidropdown(row1Layout);
+            % 下拉框和浏览按钮
+            objDropdown = uidropdown(processObjLayout);
             objDropdown.Items = {'-- 请选择 --', '当前帧原图'};
             objDropdown.Value = '-- 请选择 --';
             objDropdown.Layout.Row = 1;
             objDropdown.Layout.Column = 1;
-            objDropdown.FontSize = 13;
-            
+            objDropdown.FontSize = 12;
+
             % 添加浏览按钮到处理对象旁边
-            browseObjBtn = uibutton(row1Layout, 'push');
+            browseObjBtn = uibutton(processObjLayout, 'push');
             browseObjBtn.Text = '浏览文件';
+            browseObjBtn.Layout.Row = 1;
+            browseObjBtn.Layout.Column = 2;
             browseObjBtn.Tooltip = '选择外部处理对象文件';
             browseObjBtn.FontWeight = 'bold';
-            browseObjBtn.FontSize = 11;
+            browseObjBtn.FontSize = 10;
             browseObjBtn.FontColor = [0 0 0.8];
             
             % 外部文件路径存储变量
@@ -3174,17 +3173,17 @@ classdef MatViewerTool < matlab.apps.AppBase
             typePanel.Layout.Row = 2;
             typePanel.Title = '预处理类型';
             typePanel.FontWeight = 'bold';
-            typePanel.FontSize = 13;
-            
+            typePanel.FontSize = 11;
+
             typeLayout = uigridlayout(typePanel, [1, 1]);
-            typeLayout.Padding = [15 15 15 15];
-            
+            typeLayout.Padding = [10 5 10 5];
+
             prepTypeDropdown = uidropdown(typeLayout);
             prepTypeDropdown.Items = {'-- 请选择 --', 'CFAR', '非相参积累', '自定义...'};
             prepTypeDropdown.Value = '-- 请选择 --';
             prepTypeDropdown.Layout.Row = 1;
             prepTypeDropdown.Layout.Column = 1;
-            prepTypeDropdown.FontSize = 13;
+            prepTypeDropdown.FontSize = 12;
             prepTypeDropdown.ValueChangedFcn = createCallbackFcn(app, @onTypeChanged, true);
             
             % ========== 自定义名称（初始隐藏）==========
@@ -3192,53 +3191,53 @@ classdef MatViewerTool < matlab.apps.AppBase
             customNamePanel.Layout.Row = 3;
             customNamePanel.Title = '自定义名称';
             customNamePanel.FontWeight = 'bold';
-            customNamePanel.FontSize = 13;
+            customNamePanel.FontSize = 11;
             customNamePanel.Visible = 'off';
-            
+
             customLayout = uigridlayout(customNamePanel, [1, 1]);
-            customLayout.Padding = [15 15 15 15];
-            
+            customLayout.Padding = [10 5 10 5];
+
             customNameField = uieditfield(customLayout, 'text');
             customNameField.Placeholder = '请输入预处理名称';
             customNameField.Layout.Row = 1;
             customNameField.Layout.Column = 1;
-            customNameField.FontSize = 13;
+            customNameField.FontSize = 12;
             
             % ========== 脚本选择 ==========
             scriptPanel = uipanel(contentLayout);
             scriptPanel.Layout.Row = 4;
             scriptPanel.Title = '脚本选择';
             scriptPanel.FontWeight = 'bold';
-            scriptPanel.FontSize = 13;
-            
+            scriptPanel.FontSize = 11;
+
             % 单选按钮组
             bg = uibuttongroup(scriptPanel);
             bg.BorderType = 'none';
-            bg.Position = [15 68 690 30];
+            bg.Position = [10 48 690 25];
             bg.SelectionChangedFcn = createCallbackFcn(app, @onSourceChanged, true);
-            
+
             defaultScriptRadio = uiradiobutton(bg);
             defaultScriptRadio.Text = '使用默认脚本';
-            defaultScriptRadio.Position = [10 5 200 22];
+            defaultScriptRadio.Position = [10 2 150 20];
             defaultScriptRadio.Value = true;
-            defaultScriptRadio.FontSize = 12;
-            
+            defaultScriptRadio.FontSize = 11;
+
             customScriptRadio = uiradiobutton(bg);
             customScriptRadio.Text = '导入自定义脚本';
-            customScriptRadio.Position = [300 5 200 22];
-            customScriptRadio.FontSize = 12;
-            
+            customScriptRadio.Position = [250 2 150 20];
+            customScriptRadio.FontSize = 11;
+
             % 文件路径显示框（初始隐藏）
             scriptPathField = uieditfield(scriptPanel, 'text');
-            scriptPathField.Position = [15 38 690 25];
+            scriptPathField.Position = [10 23 690 22];
             scriptPathField.Placeholder = '未选择文件';
             scriptPathField.Editable = 'off';
             scriptPathField.Visible = 'off';
-            
+
             % 浏览按钮（初始隐藏）
             browseBtn = uibutton(scriptPanel, 'push');
             browseBtn.Text = '📁 浏览文件';
-            browseBtn.Position = [305 8 110 25];
+            browseBtn.Position = [270 5 100 20];
             browseBtn.Visible = 'off';
             browseBtn.ButtonPushedFcn = createCallbackFcn(app, @selectFile, true);
             
@@ -3247,11 +3246,11 @@ classdef MatViewerTool < matlab.apps.AppBase
             paramPanel.Layout.Row = 5;
             paramPanel.Title = '参数配置';
             paramPanel.FontWeight = 'bold';
-            paramPanel.FontSize = 13;
-            
+            paramPanel.FontSize = 11;
+
             paramLayout = uigridlayout(paramPanel, [2, 1]);
-            paramLayout.RowHeight = {40, '1x'};
-            paramLayout.Padding = [10 8 10 10];
+            paramLayout.RowHeight = {30, '1x'};
+            paramLayout.Padding = [10 5 10 5];
             
             % 工具栏
             paramToolLayout = uigridlayout(paramLayout, [1, 1]);
@@ -3380,10 +3379,10 @@ classdef MatViewerTool < matlab.apps.AppBase
 
                 if strcmp(prepType, '自定义...')
                     customNamePanel.Visible = 'on';
-                    contentLayout.RowHeight = {95, 95, 95, 125, '1x'};
+                    contentLayout.RowHeight = {65, 55, 55, 85, '1x'};
                 else
                     customNamePanel.Visible = 'off';
-                    contentLayout.RowHeight = {95, 95, 0, 125, '1x'};
+                    contentLayout.RowHeight = {65, 55, 0, 85, '1x'};
 
                     % 如果选择CFAR或非相参积累，且默认选择"使用默认脚本"，自动加载
                     if (strcmp(prepType, 'CFAR') || strcmp(prepType, '非相参积累')) && defaultScriptRadio.Value
