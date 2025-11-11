@@ -3119,7 +3119,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             contentPanel.BorderType = 'none';
             
             contentLayout = uigridlayout(contentPanel, [5, 1]);
-            contentLayout.RowHeight = {65, 55, 55, 95, '1x'};
+            contentLayout.RowHeight = {65, 55, 55, 105, '1x'};
             contentLayout.Padding = [5 5 5 5];
             contentLayout.RowSpacing = 8;
             
@@ -3212,9 +3212,9 @@ classdef MatViewerTool < matlab.apps.AppBase
 
             % 使用grid layout布局脚本选择面板（2行1列）
             scriptLayout = uigridlayout(scriptPanel, [2, 1]);
-            scriptLayout.RowHeight = {28, 32};
-            scriptLayout.Padding = [10 8 10 8];
-            scriptLayout.RowSpacing = 8;
+            scriptLayout.RowHeight = {28, 38};
+            scriptLayout.Padding = [10 5 10 5];
+            scriptLayout.RowSpacing = 10;
 
             % 第1行：单选按钮组
             bg = uibuttongroup(scriptLayout);
@@ -3403,10 +3403,10 @@ classdef MatViewerTool < matlab.apps.AppBase
 
                 if strcmp(prepType, '自定义...')
                     customNamePanel.Visible = 'on';
-                    contentLayout.RowHeight = {65, 55, 55, 95, '1x'};
+                    contentLayout.RowHeight = {65, 55, 55, 105, '1x'};
                 else
                     customNamePanel.Visible = 'off';
-                    contentLayout.RowHeight = {65, 55, 0, 95, '1x'};
+                    contentLayout.RowHeight = {65, 55, 0, 105, '1x'};
 
                     % 如果选择CFAR或非相参积累，且默认选择"使用默认脚本"，自动加载
                     if (strcmp(prepType, 'CFAR') || strcmp(prepType, '非相参积累')) && defaultScriptRadio.Value
