@@ -3417,6 +3417,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                     end
                     
                     updateProcessObjControls();
+
+                    % 将预处理对话框置顶
+                    figure(dlg);
+                    drawnow;
                 end
             end
             
@@ -3458,6 +3462,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                     fullPath = fullfile(path, file);
                     scriptPathField.Value = fullPath;
                     tryAutoDetectFromScript(fullPath);
+
+                    % 将预处理对话框置顶
+                    figure(dlg);
+                    drawnow;
                 end
             end
             
