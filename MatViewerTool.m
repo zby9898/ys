@@ -5414,45 +5414,57 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 当前目录找到Excel文件
                 excelPath = fullfile(currentPath, excelFiles(1).name);
             else
-                % 第2步：当前目录没有Excel，尝试查找第一级目录的Excel
-                % 计算相对路径
-                relativePath = strrep(currentPath, rootPath, '');
+                % 第2步：当前目录没有Excel，尝试在子目录中查找
+                subdirs = dir(currentPath);
+                subdirs = subdirs([subdirs.isdir] & ~startsWith({subdirs.name}, '.'));
 
-                % ⭐ 改进：处理可能的空字符串和前导分隔符
-                if isempty(relativePath)
-                    % 选择的就是根目录
-                    return;
+                for i = 1:length(subdirs)
+                    subdirPath = fullfile(currentPath, subdirs(i).name);
+                    excelFiles = dir(fullfile(subdirPath, '*.xlsx'));
+                    if isempty(excelFiles)
+                        excelFiles = dir(fullfile(subdirPath, '*.xls'));
+                    end
+
+                    if ~isempty(excelFiles)
+                        % 在子目录找到Excel文件
+                        excelPath = fullfile(subdirPath, excelFiles(1).name);
+                        break;
+                    end
                 end
 
-                % 移除可能的前导分隔符
-                if startsWith(relativePath, filesep)
-                    relativePath = relativePath(2:end);
-                end
+                % 第3步：子目录也没有Excel，尝试查找第一级目录的Excel
+                if isempty(excelPath)
+                    % 计算相对路径
+                    relativePath = strrep(currentPath, rootPath, '');
 
-                % 分割路径
-                pathParts = strsplit(relativePath, filesep);
-                pathParts = pathParts(~cellfun(@isempty, pathParts));
+                    % ⭐ 改进：处理可能的空字符串和前导分隔符
+                    if ~isempty(relativePath)
+                        % 移除可能的前导分隔符
+                        if startsWith(relativePath, filesep)
+                            relativePath = relativePath(2:end);
+                        end
 
-                if isempty(pathParts)
-                    return;
-                end
+                        % 分割路径
+                        pathParts = strsplit(relativePath, filesep);
+                        pathParts = pathParts(~cellfun(@isempty, pathParts));
 
-                % 第一级目录路径
-                level1Path = fullfile(app.CurrentDataPath, pathParts{1});
+                        if ~isempty(pathParts)
+                            % 第一级目录路径
+                            level1Path = fullfile(app.CurrentDataPath, pathParts{1});
 
-                if ~isfolder(level1Path)
-                    warning('MatViewerTool:Level1NotFound', '第一级目录不存在: %s', level1Path);
-                    return;
-                end
+                            if isfolder(level1Path)
+                                % 查找第一级目录的Excel文件
+                                excelFiles = dir(fullfile(level1Path, '*.xlsx'));
+                                if isempty(excelFiles)
+                                    excelFiles = dir(fullfile(level1Path, '*.xls'));
+                                end
 
-                % 查找第一级目录的Excel文件
-                excelFiles = dir(fullfile(level1Path, '*.xlsx'));
-                if isempty(excelFiles)
-                    excelFiles = dir(fullfile(level1Path, '*.xls'));
-                end
-
-                if ~isempty(excelFiles)
-                    excelPath = fullfile(level1Path, excelFiles(1).name);
+                                if ~isempty(excelFiles)
+                                    excelPath = fullfile(level1Path, excelFiles(1).name);
+                                end
+                            end
+                        end
+                    end
                 end
             end
 
