@@ -908,6 +908,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                 app.CurrentDataPath = folder;
                 updatePathDisplay(app);
                 refreshDirectory(app);
+
+                % 将GUI窗口置顶
+                figure(app.UIFigure);
+                drawnow;
             end
         end
         
@@ -2711,9 +2715,13 @@ classdef MatViewerTool < matlab.apps.AppBase
             end
             
             close(d);
-            
+
             uialert(app.UIFigure, sprintf('成功导出 %d 个文件到:\n%s', ...
                 length(frameList), exportDir), '导出完成');
+
+            % 将GUI窗口置顶
+            figure(app.UIFigure);
+            drawnow;
         end
         
         % ==================== 显示窗口函数 ====================
@@ -3935,12 +3943,16 @@ classdef MatViewerTool < matlab.apps.AppBase
                 if success
                     updateMultiView(app);
                     close(dlg);
-                    
+
                     if applyToAll
                         uialert(app.UIFigure, sprintf('预处理 "%s" 已应用到所有 %d 帧数据！', prepName, length(app.MatData)), '成功', 'Icon', 'success');
                     else
                         uialert(app.UIFigure, sprintf('预处理 "%s" 已添加成功！', prepName), '成功', 'Icon', 'success');
                     end
+
+                    % 将GUI窗口置顶
+                    figure(app.UIFigure);
+                    drawnow;
                 else
                     app.PreprocessingList(end) = [];
                     updatePreprocessingControls(app);
@@ -5327,12 +5339,16 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 强制使用单视图显示
                 if ~isempty(app.MatData) && app.CurrentIndex <= length(app.MatData)
                     displaySingleView(app);
-                    
+
                     % 更新帧信息
                     [~, filename, ext] = fileparts(app.MatFiles{app.CurrentIndex});
                     app.FrameInfoLabel.Text = sprintf('【%d/%d】%s%s', ...
                         app.CurrentIndex, length(app.MatData), filename, ext);
                 end
+
+                % 将GUI窗口置顶
+                figure(app.UIFigure);
+                drawnow;
             end
         end
 
