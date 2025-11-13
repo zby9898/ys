@@ -5372,26 +5372,27 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
         
         function fieldNames = readFieldNamesFromLevel1Excel(app, currentPath)
-            % 从第一级目录的Excel文件读取字段显示名称
+            % 从Excel文件读取字段显示名称
+            % 优先读取当前目录的Excel，如果没有则读取第一级目录的Excel
             % 读取Excel第2行从B列开始的所有单元格（B2, C2, D2...）
-            
+
             fieldNames = {};
-            
+
             if isempty(app.CurrentDataPath) || isempty(currentPath)
                 return;
             end
-            
+
             % ⭐ 改进：规范化路径，统一使用系统分隔符
             currentPath = strrep(currentPath, '/', filesep);
             currentPath = strrep(currentPath, '\', filesep);
             rootPath = strrep(app.CurrentDataPath, '/', filesep);
             rootPath = strrep(rootPath, '\', filesep);
-            
+
             % 确保根目录路径以分隔符结尾，便于后续替换
             if ~endsWith(rootPath, filesep)
                 rootPath = [rootPath, filesep];
             end
-            
+
             % ⭐ 改进：检查currentPath是否在rootPath下
             if ~startsWith(currentPath, rootPath)
                 % 路径不匹配，可能是用户选择了其他位置的文件夹
@@ -5400,68 +5401,84 @@ classdef MatViewerTool < matlab.apps.AppBase
                     app.CurrentDataPath, currentPath);
                 return;
             end
-            
-            % 计算相对路径
-            relativePath = strrep(currentPath, rootPath, '');
-            
-            % ⭐ 改进：处理可能的空字符串和前导分隔符
-            if isempty(relativePath)
-                % 选择的就是根目录
-                return;
-            end
-            
-            % 移除可能的前导分隔符
-            if startsWith(relativePath, filesep)
-                relativePath = relativePath(2:end);
-            end
-            
-            % 分割路径
-            pathParts = strsplit(relativePath, filesep);
-            pathParts = pathParts(~cellfun(@isempty, pathParts));
-            
-            if isempty(pathParts)
-                return;
-            end
-            
-            % 第一级目录路径
-            level1Path = fullfile(app.CurrentDataPath, pathParts{1});
-            
-            if ~isfolder(level1Path)
-                warning('MatViewerTool:Level1NotFound', '第一级目录不存在: %s', level1Path);
-                return;
-            end
-            
-            % 查找Excel文件
-            excelFiles = dir(fullfile(level1Path, '*.xlsx'));
+
+            excelPath = '';
+
+            % 第1步：优先在当前目录查找Excel文件
+            excelFiles = dir(fullfile(currentPath, '*.xlsx'));
             if isempty(excelFiles)
-                excelFiles = dir(fullfile(level1Path, '*.xls'));
+                excelFiles = dir(fullfile(currentPath, '*.xls'));
             end
-            
-            if isempty(excelFiles)
-                % 没有Excel文件是正常情况，不需要警告
+
+            if ~isempty(excelFiles)
+                % 当前目录找到Excel文件
+                excelPath = fullfile(currentPath, excelFiles(1).name);
+            else
+                % 第2步：当前目录没有Excel，尝试查找第一级目录的Excel
+                % 计算相对路径
+                relativePath = strrep(currentPath, rootPath, '');
+
+                % ⭐ 改进：处理可能的空字符串和前导分隔符
+                if isempty(relativePath)
+                    % 选择的就是根目录
+                    return;
+                end
+
+                % 移除可能的前导分隔符
+                if startsWith(relativePath, filesep)
+                    relativePath = relativePath(2:end);
+                end
+
+                % 分割路径
+                pathParts = strsplit(relativePath, filesep);
+                pathParts = pathParts(~cellfun(@isempty, pathParts));
+
+                if isempty(pathParts)
+                    return;
+                end
+
+                % 第一级目录路径
+                level1Path = fullfile(app.CurrentDataPath, pathParts{1});
+
+                if ~isfolder(level1Path)
+                    warning('MatViewerTool:Level1NotFound', '第一级目录不存在: %s', level1Path);
+                    return;
+                end
+
+                % 查找第一级目录的Excel文件
+                excelFiles = dir(fullfile(level1Path, '*.xlsx'));
+                if isempty(excelFiles)
+                    excelFiles = dir(fullfile(level1Path, '*.xls'));
+                end
+
+                if ~isempty(excelFiles)
+                    excelPath = fullfile(level1Path, excelFiles(1).name);
+                end
+            end
+
+            % 如果没有找到Excel文件，返回空
+            if isempty(excelPath)
                 return;
             end
-            
-            % 读取第一个Excel文件
-            excelPath = fullfile(level1Path, excelFiles(1).name);
-            
+
+            % 读取Excel文件
             try
                 % 读取第2行数据 (使用 readcell 替代 xlsread)
                 raw = readcell(excelPath);
-                
+
                 if size(raw, 1) < 2
                     warning('MatViewerTool:InsufficientRows', ...
                         'Excel文件行数不足（需要至少2行）: %s', excelPath);
                     return;
                 end
-                
+
                 % 读取第2行，从第2列（B列）开始
                 row2Data = raw(2, 2:end);
-                
+
                 % 提取非空单元格的值
                 for i = 1:length(row2Data)
                     cellValue = row2Data{i};
-                    
+
                     % 检查是否为空
                     isEmpty = false;
                     if isempty(cellValue)
@@ -5475,7 +5492,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                             isEmpty = true;
                         end
                     end
-                    
+
                     % 如果非空，添加到列表
                     if ~isEmpty
                         if isnumeric(cellValue)
@@ -5488,10 +5505,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                         end
                     end
                 end
-                
+
             catch ME
                 warning('MatViewerTool:ReadExcelError', ...
-                    '读取第一级目录Excel文件失败: %s\n文件路径: %s', ...
+                    '读取Excel文件失败: %s\n文件路径: %s', ...
                     ME.message, excelPath);
             end
         end
