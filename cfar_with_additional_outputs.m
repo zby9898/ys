@@ -9,7 +9,6 @@ function output_data = cfar_with_additional_outputs(input_data, params)
 % PARAM: training_cells, int, 16
 % PARAM: method, string, CA
 % PARAM: apply_log, bool, true
-% PARAM: reference_matrix, complex_matrix, []
 
     % 获取参数
     threshold_factor = getParam(params, 'threshold_factor', 3.0);
@@ -17,24 +16,10 @@ function output_data = cfar_with_additional_outputs(input_data, params)
     training_cells = getParam(params, 'training_cells', 16);
     method = getParam(params, 'method', 'CA');
     apply_log = getParam(params, 'apply_log', true);
-    reference_matrix = getParam(params, 'reference_matrix', []);
 
     % 确保输入为复数矩阵
     if ~isnumeric(input_data)
         error('输入数据必须是数值类型');
-    end
-
-    % 转换为double类型（解决复整数不支持的问题）
-    input_data = double(input_data);
-
-    % 处理参考矩阵（如果提供）
-    reference_magnitude = [];
-    if ~isempty(reference_matrix)
-        % 这里会触发复整数错误（如果reference_matrix是复整数）
-        reference_magnitude = abs(reference_matrix);
-        if apply_log
-            reference_magnitude = 20 * log10(reference_magnitude + eps);
-        end
     end
 
     % 计算幅度
@@ -111,11 +96,46 @@ function output_data = cfar_with_additional_outputs(input_data, params)
     output_data.detection_mask = detected;  % 检测掩码
     output_data.thresholds = thresholds;  % 阈值矩阵
     output_data.training_means = training_means;  % 训练窗口均值
-    output_data.reference_magnitude = reference_magnitude;  % 参考矩阵幅度
     output_data.processing_params = params;  % 使用的处理参数
     output_data.method = method;  % CFAR方法
     output_data.apply_log = apply_log;  % 是否应用了对数变换
     output_data.timestamp = datetime('now');  % 处理时间戳
+
+    % 如果提供了输出路径和文件名，创建并保存可视化图形
+    if isfield(params, 'output_dir') && isfield(params, 'file_name')
+        output_dir = params.output_dir;
+        file_name = params.file_name;
+
+        % 确保输出目录存在
+        if ~exist(output_dir, 'dir')
+            mkdir(output_dir);
+        end
+
+        % 创建不可见的figure用于保存
+        fig = figure('Visible', 'off');
+
+        try
+            % 创建单个图展示CFAR检测后的结果
+            ax = axes('Parent', fig);
+            imagesc(ax, abs(output_data.complex_matrix));
+            axis(ax, 'on');  % 显示坐标轴
+            title(ax, sprintf('CFAR检测结果 - 方法:%s, 阈值因子:%.1f', method, threshold_factor));
+            xlabel(ax, '距离123');
+            ylabel(ax, '多普勒测试');
+
+            % 保存为.fig文件，文件名与原图同名
+            fig_file_path = fullfile(output_dir, [file_name, '.fig']);
+            savefig(fig, fig_file_path);
+
+            % 关闭figure
+            close(fig);
+
+        catch ME
+            % 如果保存失败，关闭figure并继续
+            close(fig);
+            warning('保存.fig文件失败: %s', ME.message);
+        end
+    end
 
 end
 
