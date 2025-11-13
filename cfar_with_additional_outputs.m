@@ -9,6 +9,7 @@ function output_data = cfar_with_additional_outputs(input_data, params)
 % PARAM: training_cells, int, 16
 % PARAM: method, string, CA
 % PARAM: apply_log, bool, true
+% PARAM: reference_matrix, complex_matrix, []
 
     % 获取参数
     threshold_factor = getParam(params, 'threshold_factor', 3.0);
@@ -16,6 +17,7 @@ function output_data = cfar_with_additional_outputs(input_data, params)
     training_cells = getParam(params, 'training_cells', 16);
     method = getParam(params, 'method', 'CA');
     apply_log = getParam(params, 'apply_log', true);
+    reference_matrix = getParam(params, 'reference_matrix', []);
 
     % 确保输入为复数矩阵
     if ~isnumeric(input_data)
@@ -24,6 +26,16 @@ function output_data = cfar_with_additional_outputs(input_data, params)
 
     % 转换为double类型（解决复整数不支持的问题）
     input_data = double(input_data);
+
+    % 处理参考矩阵（如果提供）
+    reference_magnitude = [];
+    if ~isempty(reference_matrix)
+        % 这里会触发复整数错误（如果reference_matrix是复整数）
+        reference_magnitude = abs(reference_matrix);
+        if apply_log
+            reference_magnitude = 20 * log10(reference_magnitude + eps);
+        end
+    end
 
     % 计算幅度
     magnitude = abs(input_data);
@@ -99,6 +111,7 @@ function output_data = cfar_with_additional_outputs(input_data, params)
     output_data.detection_mask = detected;  % 检测掩码
     output_data.thresholds = thresholds;  % 阈值矩阵
     output_data.training_means = training_means;  % 训练窗口均值
+    output_data.reference_magnitude = reference_magnitude;  % 参考矩阵幅度
     output_data.processing_params = params;  % 使用的处理参数
     output_data.method = method;  % CFAR方法
     output_data.apply_log = apply_log;  % 是否应用了对数变换
