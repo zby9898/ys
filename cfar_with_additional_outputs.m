@@ -22,6 +22,9 @@ function output_data = cfar_with_additional_outputs(input_data, params)
         error('输入数据必须是数值类型');
     end
 
+    % 转换为double类型（解决复整数不支持的问题）
+    input_data = double(input_data);
+
     % 计算幅度
     magnitude = abs(input_data);
 
