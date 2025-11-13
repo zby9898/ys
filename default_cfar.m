@@ -1,7 +1,8 @@
 function output_data = default_cfar(input_data, params)
-% DEFAULT_CFAR CFAR检测预处理
+% DEFAULT_CFAR 默认CFAR检测预处理
 %
-% 使用CFAR算法对雷达数据进行检测处理
+%
+% 使用CFAR算法对雷达数据进行检测处理，并返回额外的处理结果
 %
 % 参数定义：
 % PARAM: threshold_factor, double, 3.0
@@ -35,6 +36,10 @@ function output_data = default_cfar(input_data, params)
 
     % 初始化输出
     detected = zeros(size(magnitude));
+    % 新增：保存阈值矩阵
+    thresholds = zeros(size(magnitude));
+    % 新增：保存训练窗口均值
+    training_means = zeros(size(magnitude));
 
     % CFAR处理
     window_size = 2 * (guard_cells + training_cells) + 1;
@@ -56,10 +61,14 @@ function output_data = default_cfar(input_data, params)
             guard_indices = guard_indices(guard_indices > 0 & guard_indices <= length(training_window));
             training_window(guard_indices) = [];
 
+            % 计算训练窗口均值
+            mean_value = mean(training_window);
+            training_means(row, col) = mean_value;
+
             % 计算阈值
             if strcmp(method, 'CA')
                 % Cell Averaging CFAR
-                threshold = mean(training_window) * threshold_factor;
+                threshold = mean_value * threshold_factor;
             elseif strcmp(method, 'GO')
                 % Greatest Of CFAR
                 half = floor(length(training_window) / 2);
@@ -69,8 +78,11 @@ function output_data = default_cfar(input_data, params)
                 half = floor(length(training_window) / 2);
                 threshold = min(mean(training_window(1:half)), mean(training_window(half+1:end))) * threshold_factor;
             else
-                threshold = mean(training_window) * threshold_factor;
+                threshold = mean_value * threshold_factor;
             end
+
+            % 保存阈值
+            thresholds(row, col) = threshold;
 
             % 检测
             if magnitude(row, col) > threshold
@@ -79,9 +91,52 @@ function output_data = default_cfar(input_data, params)
         end
     end
 
-    % 输出结果：将检测结果应用到原始复数数据
-    % 保留检测到的目标点，其他位置置为0
-    output_data = input_data .* detected;
+    % 新增：创建输出结构体，包含处理后的复数矩阵和额外的输出数据
+    output_data = struct();
+    output_data.complex_matrix = input_data .* detected;  % 用于显示的复数矩阵
+    output_data.detection_mask = detected;  % 检测掩码
+    output_data.thresholds = thresholds;  % 阈值矩阵
+    output_data.training_means = training_means;  % 训练窗口均值
+    output_data.processing_params = params;  % 使用的处理参数
+    output_data.method = method;  % CFAR方法
+    output_data.apply_log = apply_log;  % 是否应用了对数变换
+    output_data.timestamp = datetime('now');  % 处理时间戳
+
+    % 如果提供了输出路径和文件名，创建并保存可视化图形
+    if isfield(params, 'output_dir') && isfield(params, 'file_name')
+        output_dir = params.output_dir;
+        file_name = params.file_name;
+
+        % 确保输出目录存在
+        if ~exist(output_dir, 'dir')
+            mkdir(output_dir);
+        end
+
+        % 创建不可见的figure用于保存
+        fig = figure('Visible', 'off');
+
+        try
+            % 创建单个图展示CFAR检测后的结果
+            ax = axes('Parent', fig);
+            imagesc(ax, abs(output_data.complex_matrix));
+            axis(ax, 'on');  % 显示坐标轴
+            title(ax, sprintf('CFAR检测结果 - 方法:%s, 阈值因子:%.1f', method, threshold_factor));
+            xlabel(ax, '距离123');
+            ylabel(ax, '多普勒测试');
+
+            % 保存为.fig文件，文件名与原图同名
+            fig_file_path = fullfile(output_dir, [file_name, '.fig']);
+            savefig(fig, fig_file_path);
+
+            % 关闭figure
+            close(fig);
+
+        catch ME
+            % 如果保存失败，关闭figure并继续
+            close(fig);
+            warning('保存.fig文件失败: %s', ME.message);
+        end
+    end
 
 end
 
@@ -93,3 +148,4 @@ function value = getParam(params, name, default_value)
         value = default_value;
     end
 end
+

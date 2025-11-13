@@ -908,6 +908,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                 app.CurrentDataPath = folder;
                 updatePathDisplay(app);
                 refreshDirectory(app);
+
+                % 将GUI窗口置顶
+                figure(app.UIFigure);
+                drawnow;
             end
         end
         
@@ -1045,18 +1049,19 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 更新中间区域（原有功能保持不变）
                 updateExcelInfo(app, selectedPath);
                 updateSubdirList(app, selectedPath);
-                
-                % 根据目录层级更新试验背景信息和子目录
-                if currentLevel == 3 || currentLevel == 4
-                    % 第3级或第4级目录：读取当前目录的Excel（如果没有会自动向上找），显示子目录
-                    updateBgInfoFromExcel(app, selectedPath);
-                    updateSubdirDisplay(app, selectedPath);
-                else
-                    % 其他层级：清空显示
-                    app.ExcelTable.Data = {};
-                    app.SubdirListBox.Items = {};
-                end
-                app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);% 读取对应第一级目录的Excel字段名（用于帧信息显示区）
+
+                % 放开目录层级限制：对所有层级都尝试读取Excel和子目录信息
+                % 原来只对3级和4级目录读取，现在对所有层级都读取
+                updateBgInfoFromExcel(app, selectedPath);
+                updateSubdirDisplay(app, selectedPath);
+
+                % 读取对应第一级目录的Excel字段名（用于帧信息显示区）
+                % 如果没有Excel文件，readFieldNamesFromLevel1Excel会返回空数组，会使用默认字段名（字段1、字段2等）
+                app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);
+
+                % 将GUI窗口置顶
+                figure(app.UIFigure);
+                drawnow;
 
             end
         end
@@ -1253,11 +1258,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                 uialert(app.UIFigure, '请先在数据目录中选择具体的实验', '提示');
                 return;
             end
-            
-            if isempty(app.FieldDisplayNames)
-                uialert(app.UIFigure, '请先在数据目录中选择一个文件夹，以便读取字段名称配置。', '提示');
-                return;
-            end
+
+            % 取消 FieldDisplayNames 为空的检查，允许使用默认字段名（字段1、字段2等）
+            % if isempty(app.FieldDisplayNames)
+            %     uialert(app.UIFigure, '请先在数据目录中选择一个文件夹，以便读取字段名称配置。', '提示');
+            %     return;
+            % end
 
             % 确定起始目录
             if isfolder(app.SelectedExperiment)
@@ -1286,6 +1292,11 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.MatData = {};
             app.AllFields = {};
             app.CurrentIndex = 1;
+
+            % 清空预处理相关数据
+            app.PreprocessingResults = {};
+            app.CurrentPrepIndex = 1;  % 重置为原图
+
             % 读取第一级目录Excel中的字段显示名称
             % app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);
             
@@ -1547,6 +1558,13 @@ classdef MatViewerTool < matlab.apps.AppBase
             if isempty(app.PreprocessingResults)
                 app.PreprocessingResults = cell(length(app.MatData), 4);
             end
+
+            % 更新预处理控件显示（重置为初始状态）
+            updatePreprocessingControls(app);
+
+            % 将GUI窗口置顶
+            figure(app.UIFigure);
+            drawnow;
         end
         
         function updateImageInfoDisplay(app)
@@ -2697,9 +2715,13 @@ classdef MatViewerTool < matlab.apps.AppBase
             end
             
             close(d);
-            
+
             uialert(app.UIFigure, sprintf('成功导出 %d 个文件到:\n%s', ...
                 length(frameList), exportDir), '导出完成');
+
+            % 将GUI窗口置顶
+            figure(app.UIFigure);
+            drawnow;
         end
         
         % ==================== 显示窗口函数 ====================
@@ -3063,21 +3085,21 @@ classdef MatViewerTool < matlab.apps.AppBase
             end
             
             % 创建对话框
-            dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 800]);
+            dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 680]);
             dlg.WindowStyle = 'modal';
 
             % 添加帮助按钮到对话框右上角
             helpBtn = uibutton(dlg, 'push');
             helpBtn.Text = '❓';
-            helpBtn.Position = [705 685 30 30];  % 右上角位置
+            helpBtn.Position = [705 635 30 30];  % 右上角位置
             helpBtn.Tooltip = '查看脚本接口规范';
             helpBtn.ButtonPushedFcn = @(~,~) showScriptHelp();
             helpBtn.BackgroundColor = [0.95 0.95 0.95];
-            
+
             mainLayout = uigridlayout(dlg, [4, 1]);
-            mainLayout.RowHeight = {70, '1x', 1, 60};
-            mainLayout.Padding = [20 20 20 20];
-            mainLayout.RowSpacing = 15;
+            mainLayout.RowHeight = {50, '1x', 1, 50};
+            mainLayout.Padding = [15 15 15 15];
+            mainLayout.RowSpacing = 10;
             
             % ========== 第1行：提示信息 ==========
             infoPanel = uipanel(mainLayout);
@@ -3086,12 +3108,12 @@ classdef MatViewerTool < matlab.apps.AppBase
             infoPanel.BorderType = 'none';
             
             infoLayout = uigridlayout(infoPanel, [1, 3]);
-            infoLayout.ColumnWidth = {40, '1x', 40};  % 改为3列，最后一列放帮助按钮
-            infoLayout.Padding = [15 15 15 15];
-            
+            infoLayout.ColumnWidth = {35, '1x', 35};  % 改为3列，最后一列放帮助按钮
+            infoLayout.Padding = [10 8 10 8];
+
             iconLabel = uilabel(infoLayout);
             iconLabel.Text = '💡';
-            iconLabel.FontSize = 24;
+            iconLabel.FontSize = 20;
             iconLabel.HorizontalAlignment = 'center';
             iconLabel.Layout.Row = 1;
             iconLabel.Layout.Column = 1;
@@ -3099,7 +3121,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             textLabel = uilabel(infoLayout);
             textLabel.Text = '提示：请选择预处理类型并配置参数，系统将自动检测脚本所需参数';
             textLabel.WordWrap = 'on';
-            textLabel.FontSize = 13;
+            textLabel.FontSize = 11;
             textLabel.Layout.Row = 1;
             textLabel.Layout.Column = 2;
             
@@ -3111,7 +3133,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             helpBtn.Tooltip = '查看脚本接口规范';
             helpBtn.ButtonPushedFcn = @(~,~) showScriptHelp();
             helpBtn.BackgroundColor = [0.85 0.90 1];
-            helpBtn.FontSize = 16;
+            helpBtn.FontSize = 14;
             
             % ========== 第2行：内容区域 ==========
             contentPanel = uipanel(mainLayout);
@@ -3119,40 +3141,39 @@ classdef MatViewerTool < matlab.apps.AppBase
             contentPanel.BorderType = 'none';
             
             contentLayout = uigridlayout(contentPanel, [5, 1]);
-            contentLayout.RowHeight = {95, 95, 95, 125, '1x'};
-            contentLayout.Padding = [10 10 10 10];
-            contentLayout.RowSpacing = 12;
+            contentLayout.RowHeight = {65, 55, 55, 105, '1x'};
+            contentLayout.Padding = [5 5 5 5];
+            contentLayout.RowSpacing = 8;
             
             % ========== 处理对象 ==========
             processObjPanel = uipanel(contentLayout);
             processObjPanel.Layout.Row = 1;
             processObjPanel.Title = '处理对象';
             processObjPanel.FontWeight = 'bold';
-            processObjPanel.FontSize = 13;
-            
-            % 修改为2行1列布局
-            processObjLayout = uigridlayout(processObjPanel, [2, 1]);
-            processObjLayout.RowHeight = {40, 40};
+            processObjPanel.FontSize = 11;
+
+            % 修改为1行2列布局（下拉框和浏览按钮并排）
+            processObjLayout = uigridlayout(processObjPanel, [1, 2]);
+            processObjLayout.ColumnWidth = {'1x', 100};
             processObjLayout.RowSpacing = 5;
-            processObjLayout.Padding = [15 15 15 15];
+            processObjLayout.Padding = [10 5 10 5];
             
-            % 第一行：下拉框和浏览按钮（在子布局中）
-            row1Layout = uigridlayout(processObjLayout, [1, 2]);
-            row1Layout.ColumnWidth = {'1x', 120}; % 增大浏览按钮列宽
-            
-            objDropdown = uidropdown(row1Layout);
+            % 下拉框和浏览按钮
+            objDropdown = uidropdown(processObjLayout);
             objDropdown.Items = {'-- 请选择 --', '当前帧原图'};
             objDropdown.Value = '-- 请选择 --';
             objDropdown.Layout.Row = 1;
             objDropdown.Layout.Column = 1;
-            objDropdown.FontSize = 13;
-            
+            objDropdown.FontSize = 12;
+
             % 添加浏览按钮到处理对象旁边
-            browseObjBtn = uibutton(row1Layout, 'push');
+            browseObjBtn = uibutton(processObjLayout, 'push');
             browseObjBtn.Text = '浏览文件';
+            browseObjBtn.Layout.Row = 1;
+            browseObjBtn.Layout.Column = 2;
             browseObjBtn.Tooltip = '选择外部处理对象文件';
             browseObjBtn.FontWeight = 'bold';
-            browseObjBtn.FontSize = 11;
+            browseObjBtn.FontSize = 10;
             browseObjBtn.FontColor = [0 0 0.8];
             
             % 外部文件路径存储变量
@@ -3174,17 +3195,17 @@ classdef MatViewerTool < matlab.apps.AppBase
             typePanel.Layout.Row = 2;
             typePanel.Title = '预处理类型';
             typePanel.FontWeight = 'bold';
-            typePanel.FontSize = 13;
-            
+            typePanel.FontSize = 11;
+
             typeLayout = uigridlayout(typePanel, [1, 1]);
-            typeLayout.Padding = [15 15 15 15];
-            
+            typeLayout.Padding = [10 5 10 5];
+
             prepTypeDropdown = uidropdown(typeLayout);
             prepTypeDropdown.Items = {'-- 请选择 --', 'CFAR', '非相参积累', '自定义...'};
             prepTypeDropdown.Value = '-- 请选择 --';
             prepTypeDropdown.Layout.Row = 1;
             prepTypeDropdown.Layout.Column = 1;
-            prepTypeDropdown.FontSize = 13;
+            prepTypeDropdown.FontSize = 12;
             prepTypeDropdown.ValueChangedFcn = createCallbackFcn(app, @onTypeChanged, true);
             
             % ========== 自定义名称（初始隐藏）==========
@@ -3192,54 +3213,78 @@ classdef MatViewerTool < matlab.apps.AppBase
             customNamePanel.Layout.Row = 3;
             customNamePanel.Title = '自定义名称';
             customNamePanel.FontWeight = 'bold';
-            customNamePanel.FontSize = 13;
+            customNamePanel.FontSize = 11;
             customNamePanel.Visible = 'off';
-            
+
             customLayout = uigridlayout(customNamePanel, [1, 1]);
-            customLayout.Padding = [15 15 15 15];
-            
+            customLayout.Padding = [10 5 10 5];
+
             customNameField = uieditfield(customLayout, 'text');
             customNameField.Placeholder = '请输入预处理名称';
             customNameField.Layout.Row = 1;
             customNameField.Layout.Column = 1;
-            customNameField.FontSize = 13;
+            customNameField.FontSize = 12;
             
             % ========== 脚本选择 ==========
             scriptPanel = uipanel(contentLayout);
             scriptPanel.Layout.Row = 4;
             scriptPanel.Title = '脚本选择';
             scriptPanel.FontWeight = 'bold';
-            scriptPanel.FontSize = 13;
-            
-            % 单选按钮组
-            bg = uibuttongroup(scriptPanel);
+            scriptPanel.FontSize = 11;
+
+            % 使用grid layout布局脚本选择面板（2行1列）
+            scriptLayout = uigridlayout(scriptPanel, [2, 1]);
+            scriptLayout.RowHeight = {28, 38};
+            scriptLayout.Padding = [10 5 10 5];
+            scriptLayout.RowSpacing = 10;
+
+            % 第1行：单选按钮组
+            bg = uibuttongroup(scriptLayout);
             bg.BorderType = 'none';
-            bg.Position = [15 68 690 30];
+            bg.Layout.Row = 1;
+            bg.Layout.Column = 1;
             bg.SelectionChangedFcn = createCallbackFcn(app, @onSourceChanged, true);
-            
+
             defaultScriptRadio = uiradiobutton(bg);
             defaultScriptRadio.Text = '使用默认脚本';
-            defaultScriptRadio.Position = [10 5 200 22];
+            defaultScriptRadio.Position = [10 5 150 20];
             defaultScriptRadio.Value = true;
-            defaultScriptRadio.FontSize = 12;
-            
+            defaultScriptRadio.FontSize = 11;
+
             customScriptRadio = uiradiobutton(bg);
             customScriptRadio.Text = '导入自定义脚本';
-            customScriptRadio.Position = [300 5 200 22];
-            customScriptRadio.FontSize = 12;
-            
-            % 文件路径显示框（初始隐藏）
-            scriptPathField = uieditfield(scriptPanel, 'text');
-            scriptPathField.Position = [15 38 690 25];
+            customScriptRadio.Position = [250 5 150 20];
+            customScriptRadio.FontSize = 11;
+
+            % 第2行：文件选择区域（初始隐藏）
+            fileSelectionPanel = uipanel(scriptLayout);
+            fileSelectionPanel.Layout.Row = 2;
+            fileSelectionPanel.Layout.Column = 1;
+            fileSelectionPanel.BorderType = 'none';
+            fileSelectionPanel.Visible = 'off';
+
+            % 文件选择区域内部布局：文件路径框 + 浏览按钮并排
+            fileSelectionLayout = uigridlayout(fileSelectionPanel, [1, 2]);
+            fileSelectionLayout.ColumnWidth = {'1x', 100};
+            fileSelectionLayout.Padding = [0 0 0 0];
+
+            % 文件路径显示框
+            scriptPathField = uieditfield(fileSelectionLayout, 'text');
+            scriptPathField.Layout.Row = 1;
+            scriptPathField.Layout.Column = 1;
             scriptPathField.Placeholder = '未选择文件';
             scriptPathField.Editable = 'off';
-            scriptPathField.Visible = 'off';
-            
-            % 浏览按钮（初始隐藏）
-            browseBtn = uibutton(scriptPanel, 'push');
-            browseBtn.Text = '📁 浏览文件';
-            browseBtn.Position = [305 8 110 25];
-            browseBtn.Visible = 'off';
+            scriptPathField.FontSize = 12;
+
+            % 浏览按钮（与处理对象按钮格式统一）
+            browseBtn = uibutton(fileSelectionLayout, 'push');
+            browseBtn.Text = '浏览文件';
+            browseBtn.Layout.Row = 1;
+            browseBtn.Layout.Column = 2;
+            browseBtn.Tooltip = '选择自定义脚本文件';
+            browseBtn.FontWeight = 'bold';
+            browseBtn.FontSize = 10;
+            browseBtn.FontColor = [0 0 0.8];
             browseBtn.ButtonPushedFcn = createCallbackFcn(app, @selectFile, true);
             
             % ========== 参数配置 ==========
@@ -3247,11 +3292,11 @@ classdef MatViewerTool < matlab.apps.AppBase
             paramPanel.Layout.Row = 5;
             paramPanel.Title = '参数配置';
             paramPanel.FontWeight = 'bold';
-            paramPanel.FontSize = 13;
-            
+            paramPanel.FontSize = 11;
+
             paramLayout = uigridlayout(paramPanel, [2, 1]);
-            paramLayout.RowHeight = {40, '1x'};
-            paramLayout.Padding = [10 8 10 10];
+            paramLayout.RowHeight = {30, '1x'};
+            paramLayout.Padding = [10 5 10 5];
             
             % 工具栏
             paramToolLayout = uigridlayout(paramLayout, [1, 1]);
@@ -3372,6 +3417,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                     end
                     
                     updateProcessObjControls();
+
+                    % 将预处理对话框置顶
+                    figure(dlg);
+                    drawnow;
                 end
             end
             
@@ -3380,10 +3429,10 @@ classdef MatViewerTool < matlab.apps.AppBase
 
                 if strcmp(prepType, '自定义...')
                     customNamePanel.Visible = 'on';
-                    contentLayout.RowHeight = {95, 95, 95, 125, '1x'};
+                    contentLayout.RowHeight = {65, 55, 55, 105, '1x'};
                 else
                     customNamePanel.Visible = 'off';
-                    contentLayout.RowHeight = {95, 95, 0, 125, '1x'};
+                    contentLayout.RowHeight = {65, 55, 0, 105, '1x'};
 
                     % 如果选择CFAR或非相参积累，且默认选择"使用默认脚本"，自动加载
                     if (strcmp(prepType, 'CFAR') || strcmp(prepType, '非相参积累')) && defaultScriptRadio.Value
@@ -3394,11 +3443,9 @@ classdef MatViewerTool < matlab.apps.AppBase
             
             function onSourceChanged(~, event)
                 if strcmp(event.NewValue.Text, '导入自定义脚本')
-                    scriptPathField.Visible = 'on';
-                    browseBtn.Visible = 'on';
+                    fileSelectionPanel.Visible = 'on';
                 else
-                    scriptPathField.Visible = 'off';
-                    browseBtn.Visible = 'off';
+                    fileSelectionPanel.Visible = 'off';
                     scriptPathField.Value = '';
 
                     % 如果选择"使用默认脚本"且预处理类型是CFAR或非相参积累，自动加载默认脚本
@@ -3415,6 +3462,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                     fullPath = fullfile(path, file);
                     scriptPathField.Value = fullPath;
                     tryAutoDetectFromScript(fullPath);
+
+                    % 将预处理对话框置顶
+                    figure(dlg);
+                    drawnow;
                 end
             end
             
@@ -3900,12 +3951,16 @@ classdef MatViewerTool < matlab.apps.AppBase
                 if success
                     updateMultiView(app);
                     close(dlg);
-                    
+
                     if applyToAll
                         uialert(app.UIFigure, sprintf('预处理 "%s" 已应用到所有 %d 帧数据！', prepName, length(app.MatData)), '成功', 'Icon', 'success');
                     else
                         uialert(app.UIFigure, sprintf('预处理 "%s" 已添加成功！', prepName), '成功', 'Icon', 'success');
                     end
+
+                    % 将GUI窗口置顶
+                    figure(app.UIFigure);
+                    drawnow;
                 else
                     app.PreprocessingList(end) = [];
                     updatePreprocessingControls(app);
@@ -4017,12 +4072,17 @@ classdef MatViewerTool < matlab.apps.AppBase
                         end
                         
                     case 'int'
-                        % int类型统一转为double（MATLAB函数兼容性更好）
-                        if isnumeric(paramValue)
-                            value = round(double(paramValue));
+                    % int类型统一转为double（MATLAB函数兼容性更好）
+                    if isnumeric(paramValue)
+                        % 如果是复数，保留完整的复数信息
+                        if iscomplex(paramValue)
+                            value = double(paramValue); % 保留复数，不进行取整
                         else
-                            value = round(str2double(paramValue));
+                            value = round(double(paramValue));
                         end
+                    else
+                        value = round(str2double(paramValue));
+                    end
                         
                     case 'string'
                         value = char(paramValue);
@@ -4120,6 +4180,14 @@ classdef MatViewerTool < matlab.apps.AppBase
                         continue;
                     end
                     
+                    % 创建输出目录（在调用脚本之前）
+                    [dataPath, ~, ~] = fileparts(app.MatFiles{frameIdx});
+                    outputDir = fullfile(dataPath, prepConfig.name);
+                    if ~exist(outputDir, 'dir')
+                        mkdir(outputDir);
+                    end
+                    [~, originalName, ~] = fileparts(app.MatFiles{frameIdx});
+
                     % 执行预处理
                     try
                         if strcmp(prepConfig.scriptPath, 'default')
@@ -4129,7 +4197,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                             % 调用自定义脚本
                             [scriptPath, scriptName, ~] = fileparts(prepConfig.scriptPath);
                             oldPath = addpath(scriptPath);
-                            
+
                             try
                                 % 动态替换帧信息参数
                                 actualParams = prepConfig.params;
@@ -4151,7 +4219,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                                             end
                                         end
                                     end
-                                end                               
+                                end
+
+                                % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                                actualParams.output_dir = outputDir;
+                                actualParams.file_name = originalName;
+
                                 scriptFunc = str2func(scriptName);
                                 scriptOutput = scriptFunc(inputMatrix, actualParams);
                                 
@@ -4198,16 +4271,8 @@ classdef MatViewerTool < matlab.apps.AppBase
                         if ~isempty(fieldnames(additionalOutputs))
                             processedData.additional_outputs = additionalOutputs;
                         end
-                        
+
                         % 保存到本地（只保存必要字段）
-                        [dataPath, ~, ~] = fileparts(app.MatFiles{frameIdx});
-                        outputDir = fullfile(dataPath, prepConfig.name);
-                        
-                        if ~exist(outputDir, 'dir')
-                            mkdir(outputDir);
-                        end
-                        
-                        [~, originalName, ~] = fileparts(app.MatFiles{frameIdx});
                         outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
                         
                         % 准备保存数据：包含绘图变量、帧信息和额外输出
@@ -4222,7 +4287,17 @@ classdef MatViewerTool < matlab.apps.AppBase
                         end
                         
                         save(outputFile, '-struct', 'saveData');
-                        
+
+                        % 检查输出目录是否有.fig文件
+                        figFiles = dir(fullfile(outputDir, '*.fig'));
+                        if ~isempty(figFiles)
+                            % 找到最新的.fig文件
+                            [~, idx] = max([figFiles.datenum]);
+                            figFilePath = fullfile(outputDir, figFiles(idx).name);
+                            % 保存.fig文件路径到processedData
+                            processedData.figure_file = figFilePath;
+                        end
+
                         % 保存到内存缓存
                         app.PreprocessingResults{frameIdx, prepIndex + 1} = processedData;
                         
@@ -4315,6 +4390,14 @@ classdef MatViewerTool < matlab.apps.AppBase
                     return;
                 end
                 
+                % 创建输出目录
+                [dataPath, ~, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+                outputDir = fullfile(dataPath, prepConfig.name);
+                if ~exist(outputDir, 'dir')
+                    mkdir(outputDir);
+                end
+                [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+
                 % 执行预处理
                 if strcmp(prepConfig.scriptPath, 'default')
                     % 使用默认处理（暂时返回原数据）
@@ -4323,12 +4406,13 @@ classdef MatViewerTool < matlab.apps.AppBase
                 else
                     % 调用自定义脚本
                     [scriptPath, scriptName, ~] = fileparts(prepConfig.scriptPath);
-                    
+
                     % 临时添加脚本路径
                     oldPath = addpath(scriptPath);
-                    
+
                     try
-                        % 动态替换帧信息参数 
+
+                        % 动态替换帧信息参数
                         actualParams = prepConfig.params;
                         if isfield(prepConfig, 'frameInfoParams') && ~isempty(prepConfig.frameInfoParams)
                             if isfield(currentData, 'frame_info')
@@ -4340,7 +4424,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                         % 根据参数类型转换
                                         if isfield(prepConfig, 'paramTypes') && isfield(prepConfig.paramTypes, paramName)
                                             paramType = prepConfig.paramTypes.(paramName);
-                                            actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
+                                         output_dir   actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
                                         else
                                             % 没有类型信息，直接使用
                                             actualParams.(paramName) = rawValue;
@@ -4349,6 +4433,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
+
+                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                        actualParams.output_dir = outputDir;
+                        actualParams.file_name = originalName;
 
                         % 调用脚本函数
                         scriptFunc = str2func(scriptName);
@@ -4388,21 +4476,13 @@ classdef MatViewerTool < matlab.apps.AppBase
                     % 恢复路径
                     path(oldPath);
                 end
-                
-                 % 创建输出目录
-                [dataPath, ~, ~] = fileparts(app.MatFiles{app.CurrentIndex});
-                outputDir = fullfile(dataPath, prepConfig.name);
-                
-                if ~exist(outputDir, 'dir')
-                    mkdir(outputDir);
-                end
-                
+
                 % 保存处理后的数据（内存中保留完整数据）
                 processedData = currentData;
                 processedData.complex_matrix = processedMatrix;
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
-                
+
                 % 准备保存数据：包含绘图变量、帧信息和额外输出
                 saveData = struct();
                 saveData.complex_matrix = processedMatrix;
@@ -4413,11 +4493,20 @@ classdef MatViewerTool < matlab.apps.AppBase
                 if ~isempty(fieldnames(additionalOutputs))
                     saveData.additional_outputs = additionalOutputs;
                 end
-                
-                [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+
                 outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
                 save(outputFile, '-struct', 'saveData');
-                
+
+                % 检查输出目录是否有.fig文件
+                figFiles = dir(fullfile(outputDir, '*.fig'));
+                if ~isempty(figFiles)
+                    % 找到最新的.fig文件
+                    [~, idx] = max([figFiles.datenum]);
+                    figFilePath = fullfile(outputDir, figFiles(idx).name);
+                    % 保存.fig文件路径到processedData
+                    processedData.figure_file = figFilePath;
+                end
+
                 % 保存到结果缓存
                 % 现在缓存布局：1=原图, 2=CFAR, 3=非相参积累, 4=自定义预处理
                 if isempty(app.PreprocessingResults)
@@ -4454,7 +4543,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                 case 'int'
                     % int类型统一转为double
                     if isnumeric(paramValue)
-                        value = round(double(paramValue));
+                        % 如果是复数，保留完整的复数信息
+                        if iscomplex(paramValue)
+                            value = double(paramValue); % 保留复数，不进行取整
+                        else
+                            value = round(double(paramValue));
+                        end
                     else
                         value = round(str2double(paramValue));
                     end
@@ -4592,12 +4686,23 @@ classdef MatViewerTool < matlab.apps.AppBase
                     try
                         % 准备参数（外部文件没有帧信息，只使用默认参数）
                         actualParams = prepConfig.params;
-                        
+
+                        % 获取输出目录和文件名
+                        [filePath, fileName, ~] = fileparts(inputFilePath);
+                        outputDir = fullfile(filePath, prepConfig.name);
+                        if ~exist(outputDir, 'dir')
+                            mkdir(outputDir);
+                        end
+
+                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                        actualParams.output_dir = outputDir;
+                        actualParams.file_name = fileName;
+
                         % 如果外部文件包含frame_info，也尝试使用
-                        if isfield(fileData, 'frame_info') && ... 
+                        if isfield(fileData, 'frame_info') && ...
                            isfield(prepConfig, 'frameInfoParams') && ...
                            ~isempty(prepConfig.frameInfoParams)
-                            
+
                             for k = 1:length(prepConfig.frameInfoParams)
                                 paramName = prepConfig.frameInfoParams{k};
                                 if isfield(fileData.frame_info, paramName)
@@ -4611,7 +4716,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
-                        
+
                         scriptFunc = str2func(scriptName);
                         processedMatrix = scriptFunc(inputMatrix, actualParams);
                         
@@ -4680,13 +4785,27 @@ classdef MatViewerTool < matlab.apps.AppBase
                 
                 % 5. 保存文件
                 save(outputFile, '-struct', 'saveData');
-                
+
+                % 检查输出目录是否有.fig文件
+                figFiles = dir(fullfile(outputDir, '*.fig'));
+                figFilePath = '';
+                if ~isempty(figFiles)
+                    % 找到最新的.fig文件
+                    [~, idx] = max([figFiles.datenum]);
+                    figFilePath = fullfile(outputDir, figFiles(idx).name);
+                end
+
                 % 创建处理后的数据结构，用于显示
                 processedData = struct();
                 processedData.complex_matrix = processedMatrix;
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
-                
+
+                % 保存.fig文件路径（如果存在）
+                if ~isempty(figFilePath)
+                    processedData.figure_file = figFilePath;
+                end
+
                 % 保存额外的输出信息（如果有）
                 if ~isempty(fieldnames(additionalOutputs))
                     processedData.additional_outputs = additionalOutputs;
@@ -4985,17 +5104,96 @@ classdef MatViewerTool < matlab.apps.AppBase
                 end
             end
             
-            % 显示图像（使用现有的显示逻辑）
-            if ~isfield(data, 'complex_matrix')
-                return;
+            % 检查是否有.fig文件需要显示
+            if isfield(data, 'figure_file') && ~isempty(data.figure_file) && isfile(data.figure_file)
+                % 加载并显示.fig文件
+                try
+                    % 清空当前axes
+                    cla(ax);
+
+                    % 加载.fig文件
+                    figHandle = openfig(data.figure_file, 'invisible');
+
+                    % 获取figure中的axes
+                    figAxes = findobj(figHandle, 'Type', 'axes');
+
+                    if ~isempty(figAxes)
+                        % 获取第一个axes（应该只有一个）
+                        sourceAx = figAxes(1);
+
+                        % 复制所有图形对象
+                        copyobj(allchild(sourceAx), ax);
+
+                        % 复制axes属性
+                        ax.XLim = sourceAx.XLim;
+                        ax.YLim = sourceAx.YLim;
+                        if ~isempty(sourceAx.ZLim)
+                            ax.ZLim = sourceAx.ZLim;
+                        end
+                        ax.XLabel.String = sourceAx.XLabel.String;
+                        ax.YLabel.String = sourceAx.YLabel.String;
+                        if ~isempty(sourceAx.ZLabel.String)
+                            ax.ZLabel.String = sourceAx.ZLabel.String;
+                        end
+
+                        % 复制colormap
+                        if ~isempty(sourceAx.Colormap)
+                            colormap(ax, sourceAx.Colormap);
+                        end
+
+                        % 检查是否有colorbar，如果有则复制
+                        cb = findobj(figHandle, 'Type', 'colorbar');
+                        if ~isempty(cb)
+                            colorbar(ax);
+                        end
+                    end
+
+                    % 关闭临时figure
+                    close(figHandle);
+
+                catch ME
+                    % 如果加载.fig文件失败，回退到显示complex_matrix
+                    warning('加载.fig文件失败：%s，将显示复数矩阵', ME.message);
+
+                    if ~isfield(data, 'complex_matrix')
+                        return;
+                    end
+
+                    complexMatrix = data.complex_matrix;
+                    displayDefaultImage(app, ax, complexMatrix, titleStr);
+                end
+            else
+                % 没有.fig文件，显示图像（使用现有的显示逻辑）
+                if ~isfield(data, 'complex_matrix')
+                    return;
+                end
+
+                complexMatrix = data.complex_matrix;
+                displayDefaultImage(app, ax, complexMatrix, titleStr);
             end
-            
-            complexMatrix = data.complex_matrix;
-            
+            % 设置标题功能
+            if viewIndex == 1
+                % 原图：普通标题
+                title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
+            else
+                % 预处理视图：添加关闭功能
+                titleStr = sprintf('%s  [关闭×]', titleStr);
+                t = title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
+                
+                % 标题文本添加点击事件
+                t.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
+                
+                % 改变鼠标指针为手型（提示可点击）
+                ax.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
+            end
+        end
+
+        function displayDefaultImage(app, ax, complexMatrix, titleStr)
+            % 显示默认图像（复数矩阵）
             % 判断数据类型并显示
             [~, filename] = fileparts(app.MatFiles{app.CurrentIndex});
             isSAR = startsWith(lower(filename), 'sar');
-            
+
             if isSAR
                 displaySARInAxes(app, ax, complexMatrix, titleStr);
             elseif isvector(complexMatrix)
@@ -5014,23 +5212,8 @@ classdef MatViewerTool < matlab.apps.AppBase
                         displayMatrixMeshInAxes(app, ax, complexMatrix, true, titleStr);
                 end
             end
-            % 设置标题功能
-            if viewIndex == 1
-                % 原图：普通标题
-                title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
-            else
-                % 预处理视图：添加关闭功能
-                titleStr = sprintf('%s  [关闭×]', titleStr);
-                t = title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
-                
-                % 标题文本添加点击事件
-                t.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
-                
-                % 改变鼠标指针为手型（提示可点击）
-                ax.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
-            end
         end
-        
+
         function displayMatrixImagescInAxes(app, ax, complexMatrix, useDB, titleStr)
             % 在指定axes中显示imagesc图像
             view(ax, 2);
@@ -5174,12 +5357,16 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 强制使用单视图显示
                 if ~isempty(app.MatData) && app.CurrentIndex <= length(app.MatData)
                     displaySingleView(app);
-                    
+
                     % 更新帧信息
                     [~, filename, ext] = fileparts(app.MatFiles{app.CurrentIndex});
                     app.FrameInfoLabel.Text = sprintf('【%d/%d】%s%s', ...
                         app.CurrentIndex, length(app.MatData), filename, ext);
                 end
+
+                % 将GUI窗口置顶
+                figure(app.UIFigure);
+                drawnow;
             end
         end
 
@@ -5235,26 +5422,27 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
         
         function fieldNames = readFieldNamesFromLevel1Excel(app, currentPath)
-            % 从第一级目录的Excel文件读取字段显示名称
+            % 从Excel文件读取字段显示名称
+            % 优先读取当前目录的Excel，如果没有则读取第一级目录的Excel
             % 读取Excel第2行从B列开始的所有单元格（B2, C2, D2...）
-            
+
             fieldNames = {};
-            
+
             if isempty(app.CurrentDataPath) || isempty(currentPath)
                 return;
             end
-            
+
             % ⭐ 改进：规范化路径，统一使用系统分隔符
             currentPath = strrep(currentPath, '/', filesep);
             currentPath = strrep(currentPath, '\', filesep);
             rootPath = strrep(app.CurrentDataPath, '/', filesep);
             rootPath = strrep(rootPath, '\', filesep);
-            
+
             % 确保根目录路径以分隔符结尾，便于后续替换
             if ~endsWith(rootPath, filesep)
                 rootPath = [rootPath, filesep];
             end
-            
+
             % ⭐ 改进：检查currentPath是否在rootPath下
             if ~startsWith(currentPath, rootPath)
                 % 路径不匹配，可能是用户选择了其他位置的文件夹
@@ -5263,68 +5451,67 @@ classdef MatViewerTool < matlab.apps.AppBase
                     app.CurrentDataPath, currentPath);
                 return;
             end
-            
-            % 计算相对路径
-            relativePath = strrep(currentPath, rootPath, '');
-            
-            % ⭐ 改进：处理可能的空字符串和前导分隔符
-            if isempty(relativePath)
-                % 选择的就是根目录
-                return;
-            end
-            
-            % 移除可能的前导分隔符
-            if startsWith(relativePath, filesep)
-                relativePath = relativePath(2:end);
-            end
-            
-            % 分割路径
-            pathParts = strsplit(relativePath, filesep);
-            pathParts = pathParts(~cellfun(@isempty, pathParts));
-            
-            if isempty(pathParts)
-                return;
-            end
-            
-            % 第一级目录路径
-            level1Path = fullfile(app.CurrentDataPath, pathParts{1});
-            
-            if ~isfolder(level1Path)
-                warning('MatViewerTool:Level1NotFound', '第一级目录不存在: %s', level1Path);
-                return;
-            end
-            
-            % 查找Excel文件
-            excelFiles = dir(fullfile(level1Path, '*.xlsx'));
+
+            excelPath = '';
+
+            % 第1步：优先在当前目录查找Excel文件
+            excelFiles = dir(fullfile(currentPath, '*.xlsx'));
             if isempty(excelFiles)
-                excelFiles = dir(fullfile(level1Path, '*.xls'));
+                excelFiles = dir(fullfile(currentPath, '*.xls'));
             end
-            
-            if isempty(excelFiles)
-                % 没有Excel文件是正常情况，不需要警告
+
+            if ~isempty(excelFiles)
+                % 当前目录找到Excel文件
+                excelPath = fullfile(currentPath, excelFiles(1).name);
+            else
+                % 第2步：当前目录没有Excel，尝试在子目录中查找
+                subdirs = dir(currentPath);
+                subdirs = subdirs([subdirs.isdir] & ~startsWith({subdirs.name}, '.'));
+
+                % 按字母顺序排序子目录，确保查找顺序一致
+                if ~isempty(subdirs)
+                    [~, sortIdx] = sort({subdirs.name});
+                    subdirs = subdirs(sortIdx);
+                end
+
+                for i = 1:length(subdirs)
+                    subdirPath = fullfile(currentPath, subdirs(i).name);
+                    excelFiles = dir(fullfile(subdirPath, '*.xlsx'));
+                    if isempty(excelFiles)
+                        excelFiles = dir(fullfile(subdirPath, '*.xls'));
+                    end
+
+                    if ~isempty(excelFiles)
+                        % 在子目录找到Excel文件
+                        excelPath = fullfile(subdirPath, excelFiles(1).name);
+                        break;
+                    end
+                end
+            end
+
+            % 如果没有找到Excel文件，返回空（将使用默认字段名）
+            if isempty(excelPath)
                 return;
             end
-            
-            % 读取第一个Excel文件
-            excelPath = fullfile(level1Path, excelFiles(1).name);
-            
+
+            % 读取Excel文件
             try
                 % 读取第2行数据 (使用 readcell 替代 xlsread)
                 raw = readcell(excelPath);
-                
+
                 if size(raw, 1) < 2
                     warning('MatViewerTool:InsufficientRows', ...
                         'Excel文件行数不足（需要至少2行）: %s', excelPath);
                     return;
                 end
-                
+
                 % 读取第2行，从第2列（B列）开始
                 row2Data = raw(2, 2:end);
-                
+
                 % 提取非空单元格的值
                 for i = 1:length(row2Data)
                     cellValue = row2Data{i};
-                    
+
                     % 检查是否为空
                     isEmpty = false;
                     if isempty(cellValue)
@@ -5338,7 +5525,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                             isEmpty = true;
                         end
                     end
-                    
+
                     % 如果非空，添加到列表
                     if ~isEmpty
                         if isnumeric(cellValue)
@@ -5351,10 +5538,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                         end
                     end
                 end
-                
+
             catch ME
                 warning('MatViewerTool:ReadExcelError', ...
-                    '读取第一级目录Excel文件失败: %s\n文件路径: %s', ...
+                    '读取Excel文件失败: %s\n文件路径: %s', ...
                     ME.message, excelPath);
             end
         end
