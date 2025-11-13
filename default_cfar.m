@@ -141,39 +141,6 @@ function output_data = default_cfar(input_data, params)
         end
     end
 
-    % 可选：保存图形（仅当提供了output_dir时）
-    if isfield(params, 'output_dir') && ~isempty(params.output_dir)
-        try
-            % 创建图形（不显示）
-            fig = figure('Visible', 'off');
-
-            % 绘制CFAR检测结果
-            subplot(2,1,1);
-            imagesc(abs(input_data));
-            colorbar;
-            title('原始数据幅度');
-            xlabel('距离单元');
-            ylabel('多普勒单元');
-
-            subplot(2,1,2);
-            imagesc(abs(output_data));
-            colorbar;
-            title(sprintf('CFAR检测结果 (方法: %s, 阈值因子: %.1f)', method, threshold_factor));
-            xlabel('距离单元');
-            ylabel('多普勒单元');
-
-            % 保存为.fig文件
-            timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-            figFilename = fullfile(params.output_dir, sprintf('cfar_result_%s.fig', timestamp));
-            savefig(fig, figFilename);
-
-            % 关闭图形
-            close(fig);
-        catch
-            % 如果保存失败，静默忽略（不影响主要功能）
-        end
-    end
-
 end
 
 function value = getParam(params, name, default_value)
