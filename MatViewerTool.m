@@ -5431,44 +5431,9 @@ classdef MatViewerTool < matlab.apps.AppBase
                         break;
                     end
                 end
-
-                % 第3步：子目录也没有Excel，尝试查找第一级目录的Excel
-                if isempty(excelPath)
-                    % 计算相对路径
-                    relativePath = strrep(currentPath, rootPath, '');
-
-                    % ⭐ 改进：处理可能的空字符串和前导分隔符
-                    if ~isempty(relativePath)
-                        % 移除可能的前导分隔符
-                        if startsWith(relativePath, filesep)
-                            relativePath = relativePath(2:end);
-                        end
-
-                        % 分割路径
-                        pathParts = strsplit(relativePath, filesep);
-                        pathParts = pathParts(~cellfun(@isempty, pathParts));
-
-                        if ~isempty(pathParts)
-                            % 第一级目录路径
-                            level1Path = fullfile(app.CurrentDataPath, pathParts{1});
-
-                            if isfolder(level1Path)
-                                % 查找第一级目录的Excel文件
-                                excelFiles = dir(fullfile(level1Path, '*.xlsx'));
-                                if isempty(excelFiles)
-                                    excelFiles = dir(fullfile(level1Path, '*.xls'));
-                                end
-
-                                if ~isempty(excelFiles)
-                                    excelPath = fullfile(level1Path, excelFiles(1).name);
-                                end
-                            end
-                        end
-                    end
-                end
             end
 
-            % 如果没有找到Excel文件，返回空
+            % 如果没有找到Excel文件，返回空（将使用默认字段名）
             if isempty(excelPath)
                 return;
             end
