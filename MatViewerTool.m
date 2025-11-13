@@ -1045,18 +1045,15 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 更新中间区域（原有功能保持不变）
                 updateExcelInfo(app, selectedPath);
                 updateSubdirList(app, selectedPath);
-                
-                % 根据目录层级更新试验背景信息和子目录
-                if currentLevel == 3 || currentLevel == 4
-                    % 第3级或第4级目录：读取当前目录的Excel（如果没有会自动向上找），显示子目录
-                    updateBgInfoFromExcel(app, selectedPath);
-                    updateSubdirDisplay(app, selectedPath);
-                else
-                    % 其他层级：清空显示
-                    app.ExcelTable.Data = {};
-                    app.SubdirListBox.Items = {};
-                end
-                app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);% 读取对应第一级目录的Excel字段名（用于帧信息显示区）
+
+                % 放开目录层级限制：对所有层级都尝试读取Excel和子目录信息
+                % 原来只对3级和4级目录读取，现在对所有层级都读取
+                updateBgInfoFromExcel(app, selectedPath);
+                updateSubdirDisplay(app, selectedPath);
+
+                % 读取对应第一级目录的Excel字段名（用于帧信息显示区）
+                % 如果没有Excel文件，readFieldNamesFromLevel1Excel会返回空数组，会使用默认字段名（字段1、字段2等）
+                app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);
 
             end
         end
@@ -1253,11 +1250,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                 uialert(app.UIFigure, '请先在数据目录中选择具体的实验', '提示');
                 return;
             end
-            
-            if isempty(app.FieldDisplayNames)
-                uialert(app.UIFigure, '请先在数据目录中选择一个文件夹，以便读取字段名称配置。', '提示');
-                return;
-            end
+
+            % 取消 FieldDisplayNames 为空的检查，允许使用默认字段名（字段1、字段2等）
+            % if isempty(app.FieldDisplayNames)
+            %     uialert(app.UIFigure, '请先在数据目录中选择一个文件夹，以便读取字段名称配置。', '提示');
+            %     return;
+            % end
 
             % 确定起始目录
             if isfolder(app.SelectedExperiment)
