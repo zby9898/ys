@@ -1055,6 +1055,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 如果没有Excel文件，readFieldNamesFromLevel1Excel会返回空数组，会使用默认字段名（字段1、字段2等）
                 app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);
 
+                % 将GUI窗口置顶
+                figure(app.UIFigure);
+                drawnow;
+
             end
         end
         
@@ -1553,6 +1557,10 @@ classdef MatViewerTool < matlab.apps.AppBase
 
             % 更新预处理控件显示（重置为初始状态）
             updatePreprocessingControls(app);
+
+            % 将GUI窗口置顶
+            figure(app.UIFigure);
+            drawnow;
         end
         
         function updateImageInfoDisplay(app)
