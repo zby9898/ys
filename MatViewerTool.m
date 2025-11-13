@@ -5418,6 +5418,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                 subdirs = dir(currentPath);
                 subdirs = subdirs([subdirs.isdir] & ~startsWith({subdirs.name}, '.'));
 
+                % 按字母顺序排序子目录，确保查找顺序一致
+                if ~isempty(subdirs)
+                    [~, sortIdx] = sort({subdirs.name});
+                    subdirs = subdirs(sortIdx);
+                end
+
                 for i = 1:length(subdirs)
                     subdirPath = fullfile(currentPath, subdirs(i).name);
                     excelFiles = dir(fullfile(subdirPath, '*.xlsx'));
