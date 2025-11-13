@@ -1284,6 +1284,11 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.MatData = {};
             app.AllFields = {};
             app.CurrentIndex = 1;
+
+            % 清空预处理相关数据
+            app.PreprocessingResults = {};
+            app.CurrentPrepIndex = 1;  % 重置为原图
+
             % 读取第一级目录Excel中的字段显示名称
             % app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);
             
@@ -1545,6 +1550,9 @@ classdef MatViewerTool < matlab.apps.AppBase
             if isempty(app.PreprocessingResults)
                 app.PreprocessingResults = cell(length(app.MatData), 4);
             end
+
+            % 更新预处理控件显示（重置为初始状态）
+            updatePreprocessingControls(app);
         end
         
         function updateImageInfoDisplay(app)
