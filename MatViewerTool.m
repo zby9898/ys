@@ -3383,6 +3383,11 @@ classdef MatViewerTool < matlab.apps.AppBase
             function browseProcessObjFile()
                 % 浏览处理对象文件
                 [file, path] = uigetfile({'*.mat', 'MAT文件 (*.mat)'}, '选择处理对象文件');
+
+                % 文件选择后置顶窗口
+                figure(app.UIFigure);  % 先置顶主UI
+                figure(dlg);           % 再置顶预处理弹窗
+
                 if file ~= 0
                     selectedFilePath = fullfile(path, file);
                     
@@ -3458,6 +3463,11 @@ classdef MatViewerTool < matlab.apps.AppBase
             
             function selectFile(~, ~)
                 [file, path] = uigetfile({'*.m', 'MATLAB脚本 (*.m)'}, '选择预处理脚本');
+
+                % 文件选择后置顶窗口
+                figure(app.UIFigure);  % 先置顶主UI
+                figure(dlg);           % 再置顶预处理弹窗
+
                 if file ~= 0
                     fullPath = fullfile(path, file);
                     scriptPathField.Value = fullPath;
