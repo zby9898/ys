@@ -2061,13 +2061,17 @@ classdef MatViewerTool < matlab.apps.AppBase
         function showStructDetailDialog(app, structName, structValue)
             % 显示struct详情对话框
             
-            % 创建对话框
+            % 创建对话框（先设置为不可见，避免显示移动过程）
             dlg = uifigure('Name', ['结构体详情: ' structName], ...
                 'Position', [100 100 500 400], ...
-                'WindowStyle', 'modal');
+                'WindowStyle', 'modal', ...
+                'Visible', 'off');
 
             % 居中显示弹窗
             movegui(dlg, 'center');
+
+            % 设置为可见
+            dlg.Visible = 'on';
 
             % 置顶弹窗
             figure(app.UIFigure);  % 先置顶主UI
@@ -2774,12 +2778,15 @@ classdef MatViewerTool < matlab.apps.AppBase
             complexMatrix = data.complex_matrix;
             vectorData = complexMatrix(:);  % 转为列向量
             
-            % 创建新窗口
-            fig = uifigure('Name', '时域波形图');
+            % 创建新窗口（先设置为不可见，避免显示移动过程）
+            fig = uifigure('Name', '时域波形图', 'Visible', 'off');
             fig.Position = [100 100 1000 600];
 
             % 居中显示窗口
             movegui(fig, 'center');
+
+            % 设置为可见
+            fig.Visible = 'on';
 
             % 置顶窗口
             figure(app.UIFigure);  % 先置顶主UI
@@ -2818,12 +2825,15 @@ classdef MatViewerTool < matlab.apps.AppBase
             complexMatrix = data.complex_matrix;
             amplitudeMatrix = abs(complexMatrix);
             
-            % 创建新窗口
-            fig = uifigure('Name', '原图放大');
+            % 创建新窗口（先设置为不可见，避免显示移动过程）
+            fig = uifigure('Name', '原图放大', 'Visible', 'off');
             fig.Position = [100 100 1000 800];
 
             % 居中显示窗口
             movegui(fig, 'center');
+
+            % 设置为可见
+            fig.Visible = 'on';
 
             % 置顶窗口
             figure(app.UIFigure);  % 先置顶主UI
@@ -2869,12 +2879,15 @@ classdef MatViewerTool < matlab.apps.AppBase
             % dB处理
             dbMatrix = 20 * log10(amplitudeMatrix + eps);
             
-            % 创建新窗口
-            fig = uifigure('Name', 'dB图放大');
+            % 创建新窗口（先设置为不可见，避免显示移动过程）
+            fig = uifigure('Name', 'dB图放大', 'Visible', 'off');
             fig.Position = [100 100 1000 800];
 
             % 居中显示窗口
             movegui(fig, 'center');
+
+            % 设置为可见
+            fig.Visible = 'on';
 
             % 置顶窗口
             figure(app.UIFigure);  % 先置顶主UI
@@ -2992,12 +3005,15 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 获取矩阵尺寸
             [rows, cols] = size(normalizedMatrix);
             
-            % 创建新窗口
-            fig = uifigure('Name', 'SAR图');
+            % 创建新窗口（先设置为不可见，避免显示移动过程）
+            fig = uifigure('Name', 'SAR图', 'Visible', 'off');
             fig.Position = [100 100 1000 800];
 
             % 居中显示窗口
             movegui(fig, 'center');
+
+            % 设置为可见
+            fig.Visible = 'on';
 
             % 置顶窗口
             figure(app.UIFigure);  % 先置顶主UI
@@ -3045,12 +3061,15 @@ classdef MatViewerTool < matlab.apps.AppBase
             fieldName = data{row, 1};
             fieldValue = data{row, 2};
             
-            % 创建详情对话框
-            fig = uifigure('Name', sprintf('字段详情: %s', fieldName));
+            % 创建详情对话框（先设置为不可见，避免显示移动过程）
+            fig = uifigure('Name', sprintf('字段详情: %s', fieldName), 'Visible', 'off');
             fig.Position = [200 200 600 400];
 
             % 居中显示窗口
             movegui(fig, 'center');
+
+            % 设置为可见
+            fig.Visible = 'on';
 
             % 置顶窗口
             figure(app.UIFigure);  % 先置顶主UI
@@ -3157,12 +3176,15 @@ classdef MatViewerTool < matlab.apps.AppBase
                 return;
             end
             
-            % 创建对话框
-            dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 680]);
+            % 创建对话框（先设置为不可见，避免显示移动过程）
+            dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 680], 'Visible', 'off');
             dlg.WindowStyle = 'modal';
 
             % 居中显示弹窗
             movegui(dlg, 'center');
+
+            % 设置为可见
+            dlg.Visible = 'on';
 
             % 置顶弹窗
             figure(app.UIFigure);  % 先置顶主UI
