@@ -1080,42 +1080,58 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
         
         function excelData = readExcelFile(app, folderPath)
-            % 读取指定目录下的Excel文件（如果没有，向上查找父目录）
+            % 读取试验背景信息Excel文件（只从3级或4级目录读取）
+            % 优先读取4级目录的Excel，如果4级没有则读取3级的Excel
             excelData = {};
-            
+
             if ~isfolder(folderPath)
                 return;
             end
-            
-            % 在当前目录查找Excel文件
-            excelFiles = dir(fullfile(folderPath, '*.xlsx'));
-            if isempty(excelFiles)
-                excelFiles = dir(fullfile(folderPath, '*.xls'));
+
+            % 计算当前目录层级
+            relativePath = strrep(folderPath, app.CurrentDataPath, '');
+            pathParts = strsplit(relativePath, filesep);
+            pathParts = pathParts(~cellfun(@isempty, pathParts));
+            currentLevel = length(pathParts);
+
+            % 只从3级或4级目录读取背景信息
+            if currentLevel ~= 3 && currentLevel ~= 4
+                return;
             end
-            
+
             excelFilePath = '';
-            
-            if ~isempty(excelFiles)
-                % 当前目录找到Excel
-                excelFilePath = fullfile(folderPath, excelFiles(1).name);
-            else
-                % 当前目录没有Excel，尝试向上查找父目录（仅限3级和4级目录）
-                relativePath = strrep(folderPath, app.CurrentDataPath, '');
-                pathParts = strsplit(relativePath, filesep);
-                pathParts = pathParts(~cellfun(@isempty, pathParts));
-                currentLevel = length(pathParts);
-                
-                % 如果是4级目录，向上找3级目录的Excel
-                if currentLevel == 4
+
+            % 如果是4级目录，优先在4级查找Excel
+            if currentLevel == 4
+                excelFiles = dir(fullfile(folderPath, '*.xlsx'));
+                if isempty(excelFiles)
+                    excelFiles = dir(fullfile(folderPath, '*.xls'));
+                end
+
+                if ~isempty(excelFiles)
+                    % 4级目录找到Excel
+                    excelFilePath = fullfile(folderPath, excelFiles(1).name);
+                else
+                    % 4级没有，向上找3级目录的Excel
                     parentPath = fileparts(folderPath);
                     parentExcelFiles = dir(fullfile(parentPath, '*.xlsx'));
                     if isempty(parentExcelFiles)
                         parentExcelFiles = dir(fullfile(parentPath, '*.xls'));
                     end
-                    
+
                     if ~isempty(parentExcelFiles)
                         excelFilePath = fullfile(parentPath, parentExcelFiles(1).name);
                     end
+                end
+            elseif currentLevel == 3
+                % 如果是3级目录，直接在3级查找Excel
+                excelFiles = dir(fullfile(folderPath, '*.xlsx'));
+                if isempty(excelFiles)
+                    excelFiles = dir(fullfile(folderPath, '*.xls'));
+                end
+
+                if ~isempty(excelFiles)
+                    excelFilePath = fullfile(folderPath, excelFiles(1).name);
                 end
             end
             
@@ -1299,9 +1315,9 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.PreprocessingResults = {};
             app.CurrentPrepIndex = 1;  % 重置为原图
 
-            % 读取第一级目录Excel中的字段显示名称
-            % app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);
-            
+            % 读取第一级目录Excel中的字段显示名称和单位
+            [app.FieldDisplayNames, app.FieldUnits] = readFieldNamesFromLevel1Excel(app, selectedPath);
+
             % 创建进度对话框
             d = uiprogressdlg(app.UIFigure, 'Title', '加载数据', ...
                 'Message', '正在加载MAT文件...', 'Cancelable', 'on');
@@ -5480,9 +5496,8 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
         
         function [fieldNames, fieldUnits] = readFieldNamesFromLevel1Excel(app, currentPath)
-            % 从Excel文件读取字段显示名称和单位
-            % 优先读取当前目录的Excel，如果没有则读取第一级目录的Excel
-            % 读取Excel第2行从B列开始的所有单元格（B2, C2, D2...）
+            % 从一级目录的Excel文件读取帧信息字段显示名称和单位
+            % 总是从一级目录读取Excel文件的第1行（带单位的字段名）
             % 同时提取字段名中的单位（如"高度(m)"中的"(m)"）
 
             fieldNames = {};
@@ -5492,7 +5507,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                 return;
             end
 
-            % ⭐ 改进：规范化路径，统一使用系统分隔符
+            % ⭐ 规范化路径，统一使用系统分隔符
             currentPath = strrep(currentPath, '/', filesep);
             currentPath = strrep(currentPath, '\', filesep);
             rootPath = strrep(app.CurrentDataPath, '/', filesep);
@@ -5503,7 +5518,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                 rootPath = [rootPath, filesep];
             end
 
-            % ⭐ 改进：检查currentPath是否在rootPath下
+            % ⭐ 检查currentPath是否在rootPath下
             if ~startsWith(currentPath, rootPath)
                 % 路径不匹配，可能是用户选择了其他位置的文件夹
                 warning('MatViewerTool:PathMismatch', ...
@@ -5512,41 +5527,29 @@ classdef MatViewerTool < matlab.apps.AppBase
                 return;
             end
 
-            excelPath = '';
+            % ⭐ 计算一级目录路径
+            relativePath = strrep(currentPath, rootPath, '');
+            pathParts = strsplit(relativePath, filesep);
+            pathParts = pathParts(~cellfun(@isempty, pathParts));
 
-            % 第1步：优先在当前目录查找Excel文件
-            excelFiles = dir(fullfile(currentPath, '*.xlsx'));
+            % 如果没有路径部分，说明currentPath就是根目录
+            if isempty(pathParts)
+                level1Path = currentPath;
+            else
+                % 获取第一级目录
+                level1Path = fullfile(rootPath, pathParts{1});
+            end
+
+            % 在一级目录查找Excel文件
+            excelPath = '';
+            excelFiles = dir(fullfile(level1Path, '*.xlsx'));
             if isempty(excelFiles)
-                excelFiles = dir(fullfile(currentPath, '*.xls'));
+                excelFiles = dir(fullfile(level1Path, '*.xls'));
             end
 
             if ~isempty(excelFiles)
-                % 当前目录找到Excel文件
-                excelPath = fullfile(currentPath, excelFiles(1).name);
-            else
-                % 第2步：当前目录没有Excel，尝试在子目录中查找
-                subdirs = dir(currentPath);
-                subdirs = subdirs([subdirs.isdir] & ~startsWith({subdirs.name}, '.'));
-
-                % 按字母顺序排序子目录，确保查找顺序一致
-                if ~isempty(subdirs)
-                    [~, sortIdx] = sort({subdirs.name});
-                    subdirs = subdirs(sortIdx);
-                end
-
-                for i = 1:length(subdirs)
-                    subdirPath = fullfile(currentPath, subdirs(i).name);
-                    excelFiles = dir(fullfile(subdirPath, '*.xlsx'));
-                    if isempty(excelFiles)
-                        excelFiles = dir(fullfile(subdirPath, '*.xls'));
-                    end
-
-                    if ~isempty(excelFiles)
-                        % 在子目录找到Excel文件
-                        excelPath = fullfile(subdirPath, excelFiles(1).name);
-                        break;
-                    end
-                end
+                % 一级目录找到Excel文件
+                excelPath = fullfile(level1Path, excelFiles(1).name);
             end
 
             % 如果没有找到Excel文件，返回空（将使用默认字段名）
@@ -5556,21 +5559,21 @@ classdef MatViewerTool < matlab.apps.AppBase
 
             % 读取Excel文件
             try
-                % 读取第2行数据 (使用 readcell 替代 xlsread)
+                % 读取Excel数据 (使用 readcell 替代 xlsread)
                 raw = readcell(excelPath);
 
-                if size(raw, 1) < 2
+                if size(raw, 1) < 1
                     warning('MatViewerTool:InsufficientRows', ...
-                        'Excel文件行数不足（需要至少2行）: %s', excelPath);
+                        'Excel文件行数不足（需要至少1行）: %s', excelPath);
                     return;
                 end
 
-                % 读取第2行，从第2列（B列）开始
-                row2Data = raw(2, 2:end);
+                % ⭐ 读取第1行（带单位的字段名），从第2列（B列）开始
+                row1Data = raw(1, 2:end);
 
                 % 提取非空单元格的值
-                for i = 1:length(row2Data)
-                    cellValue = row2Data{i};
+                for i = 1:length(row1Data)
+                    cellValue = row1Data{i};
 
                     % 检查是否为空
                     isEmpty = false;
