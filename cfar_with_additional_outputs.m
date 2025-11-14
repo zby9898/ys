@@ -101,42 +101,6 @@ function output_data = cfar_with_additional_outputs(input_data, params)
     output_data.apply_log = apply_log;  % 是否应用了对数变换
     output_data.timestamp = datetime('now');  % 处理时间戳
 
-    % 如果提供了输出路径和文件名，创建并保存可视化图形
-    if isfield(params, 'output_dir') && isfield(params, 'file_name')
-        output_dir = params.output_dir;
-        file_name = params.file_name;
-
-        % 确保输出目录存在
-        if ~exist(output_dir, 'dir')
-            mkdir(output_dir);
-        end
-
-        % 创建不可见的figure用于保存
-        fig = figure('Visible', 'off');
-
-        try
-            % 创建单个图展示CFAR检测后的结果
-            ax = axes('Parent', fig);
-            imagesc(ax, abs(output_data.complex_matrix));
-            axis(ax, 'on');  % 显示坐标轴
-            title(ax, sprintf('CFAR检测结果 - 方法:%s, 阈值因子:%.1f', method, threshold_factor));
-            xlabel(ax, '距离123');
-            ylabel(ax, '多普勒测试');
-
-            % 保存为.fig文件，文件名与原图同名
-            fig_file_path = fullfile(output_dir, [file_name, '.fig']);
-            savefig(fig, fig_file_path);
-
-            % 关闭figure
-            close(fig);
-
-        catch ME
-            % 如果保存失败，关闭figure并继续
-            close(fig);
-            warning('保存.fig文件失败: %s', ME.message);
-        end
-    end
-
 end
 
 function value = getParam(params, name, default_value)

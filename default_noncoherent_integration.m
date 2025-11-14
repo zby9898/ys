@@ -104,42 +104,6 @@ function output_data = default_noncoherent_integration(input_data, params)
         end
     end
 
-    % 可选：保存图形（仅当提供了output_dir时）
-    if isfield(params, 'output_dir') && ~isempty(params.output_dir)
-        try
-            % 保存原始输入数据的大小（用于显示）
-            original_input = double(input_data);  % 使用处理前的数据
-
-            % 创建图形（不显示）
-            fig = figure('Visible', 'off');
-
-            % 绘制非相干积累结果
-            subplot(2,1,1);
-            imagesc(abs(original_input));
-            colorbar;
-            title('原始数据幅度');
-            xlabel('距离单元');
-            ylabel('多普勒单元');
-
-            subplot(2,1,2);
-            imagesc(abs(output_data));
-            colorbar;
-            title(sprintf('非相干积累结果 (积累数: %d, 维度: %s)', integration_number, dimension));
-            xlabel('距离单元');
-            ylabel('多普勒单元');
-
-            % 保存为.fig文件
-            timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-            figFilename = fullfile(params.output_dir, sprintf('noncoherent_integration_%s.fig', timestamp));
-            savefig(fig, figFilename);
-
-            % 关闭图形
-            close(fig);
-        catch
-            % 如果保存失败，静默忽略（不影响主要功能）
-        end
-    end
-
 end
 
 function value = getParam(params, name, default_value)

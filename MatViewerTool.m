@@ -4310,16 +4310,6 @@ classdef MatViewerTool < matlab.apps.AppBase
                         
                         save(outputFile, '-struct', 'saveData');
 
-                        % 检查输出目录是否有.fig文件
-                        figFiles = dir(fullfile(outputDir, '*.fig'));
-                        if ~isempty(figFiles)
-                            % 找到最新的.fig文件
-                            [~, idx] = max([figFiles.datenum]);
-                            figFilePath = fullfile(outputDir, figFiles(idx).name);
-                            % 保存.fig文件路径到processedData
-                            processedData.figure_file = figFilePath;
-                        end
-
                         % 保存到内存缓存
                         app.PreprocessingResults{frameIdx, prepIndex + 1} = processedData;
                         
@@ -4505,6 +4495,11 @@ classdef MatViewerTool < matlab.apps.AppBase
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
 
+                % 保存额外输出（如阈值矩阵、训练均值等）到内存
+                if ~isempty(fieldnames(additionalOutputs))
+                    processedData.additional_outputs = additionalOutputs;
+                end
+
                 % 准备保存数据：包含绘图变量、帧信息和额外输出
                 saveData = struct();
                 saveData.complex_matrix = processedMatrix;
@@ -4518,16 +4513,6 @@ classdef MatViewerTool < matlab.apps.AppBase
 
                 outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
                 save(outputFile, '-struct', 'saveData');
-
-                % 检查输出目录是否有.fig文件
-                figFiles = dir(fullfile(outputDir, '*.fig'));
-                if ~isempty(figFiles)
-                    % 找到最新的.fig文件
-                    [~, idx] = max([figFiles.datenum]);
-                    figFilePath = fullfile(outputDir, figFiles(idx).name);
-                    % 保存.fig文件路径到processedData
-                    processedData.figure_file = figFilePath;
-                end
 
                 % 保存到结果缓存
                 % 现在缓存布局：1=原图, 2=CFAR, 3=非相参积累, 4=自定义预处理
@@ -5851,6 +5836,11 @@ classdef MatViewerTool < matlab.apps.AppBase
                 processedData.complex_matrix = processedMatrix;
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
+
+                % 保存额外输出（如阈值矩阵、训练均值等）
+                if ~isempty(fieldnames(additionalOutputs))
+                    processedData.additional_outputs = additionalOutputs;
+                end
 
                 % 初始化预处理结果缓存
                 if isempty(app.PreprocessingResults)
