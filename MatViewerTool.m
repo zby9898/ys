@@ -4243,7 +4243,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                     end
                                 end
 
-                                % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                                % 添加输出目录和文件名到参数中（供脚本使用）
                                 actualParams.output_dir = outputDir;
                                 actualParams.file_name = originalName;
 
@@ -4446,7 +4446,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                             end
                         end
 
-                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                        % 添加输出目录和文件名到参数中（供脚本使用）
                         actualParams.output_dir = outputDir;
                         actualParams.file_name = originalName;
 
@@ -4701,7 +4701,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                             mkdir(outputDir);
                         end
 
-                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
+                        % 添加输出目录和文件名到参数中（供脚本使用）
                         actualParams.output_dir = outputDir;
                         actualParams.file_name = fileName;
 
@@ -4793,25 +4793,11 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 5. 保存文件
                 save(outputFile, '-struct', 'saveData');
 
-                % 检查输出目录是否有.fig文件
-                figFiles = dir(fullfile(outputDir, '*.fig'));
-                figFilePath = '';
-                if ~isempty(figFiles)
-                    % 找到最新的.fig文件
-                    [~, idx] = max([figFiles.datenum]);
-                    figFilePath = fullfile(outputDir, figFiles(idx).name);
-                end
-
                 % 创建处理后的数据结构，用于显示
                 processedData = struct();
                 processedData.complex_matrix = processedMatrix;
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
-
-                % 保存.fig文件路径（如果存在）
-                if ~isempty(figFilePath)
-                    processedData.figure_file = figFilePath;
-                end
 
                 % 保存额外的输出信息（如果有）
                 if ~isempty(fieldnames(additionalOutputs))
@@ -5111,8 +5097,50 @@ classdef MatViewerTool < matlab.apps.AppBase
                 end
             end
             
-            % 检查是否有.fig文件需要显示
-            if isfield(data, 'figure_file') && ~isempty(data.figure_file) && isfile(data.figure_file)
+            % 优先使用 additional_outputs 变量动态生成图形（替换原来的.fig文件显示）
+            if isfield(data, 'additional_outputs') && ~isempty(data.additional_outputs)
+                % 从变量读取数据，动态生成图形，替换原来加载.fig文件的逻辑
+                try
+                    % 清空当前axes
+                    cla(ax);
+
+                    addOutputs = data.additional_outputs;
+
+                    % 根据预处理类型动态生成相应的图形（还原原来.fig的显示效果）
+                    if isfield(addOutputs, 'method')  % CFAR检测
+                        % 从变量还原CFAR.fig的显示内容
+                        if isfield(data, 'complex_matrix')
+                            % 显示CFAR检测后的结果
+                            imagesc(ax, abs(data.complex_matrix));
+                            axis(ax, 'on');
+                            colorbar(ax);
+                            xlabel(ax, '距离单元');
+                            ylabel(ax, '多普勒单元');
+                        end
+                    else
+                        % 其他预处理：显示complex_matrix
+                        if isfield(data, 'complex_matrix')
+                            imagesc(ax, abs(data.complex_matrix));
+                            axis(ax, 'on');
+                            colorbar(ax);
+                            xlabel(ax, '距离单元');
+                            ylabel(ax, '多普勒单元');
+                        end
+                    end
+
+                catch ME
+                    % 如果动态生成失败，回退到显示complex_matrix
+                    warning('从变量生成图形失败：%s，将显示复数矩阵', ME.message);
+
+                    if ~isfield(data, 'complex_matrix')
+                        return;
+                    end
+
+                    complexMatrix = data.complex_matrix;
+                    displayDefaultImage(app, ax, complexMatrix, titleStr);
+                end
+            % 向后兼容：检查是否有.fig文件需要显示（旧方式）
+            elseif isfield(data, 'figure_file') && ~isempty(data.figure_file) && isfile(data.figure_file)
                 % 加载并显示.fig文件
                 try
                     % 清空当前axes
@@ -5170,7 +5198,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                     displayDefaultImage(app, ax, complexMatrix, titleStr);
                 end
             else
-                % 没有.fig文件，显示图像（使用现有的显示逻辑）
+                % 没有额外输出也没有.fig文件，显示图像（使用现有的显示逻辑）
                 if ~isfield(data, 'complex_matrix')
                     return;
                 end
