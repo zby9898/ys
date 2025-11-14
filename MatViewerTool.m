@@ -1055,9 +1055,9 @@ classdef MatViewerTool < matlab.apps.AppBase
                 updateBgInfoFromExcel(app, selectedPath);
                 updateSubdirDisplay(app, selectedPath);
 
-                % 读取对应第一级目录的Excel字段名（用于帧信息显示区）
+                % 读取对应第一级目录的Excel字段名和单位（用于帧信息显示区）
                 % 如果没有Excel文件，readFieldNamesFromLevel1Excel会返回空数组，会使用默认字段名（字段1、字段2等）
-                app.FieldDisplayNames = readFieldNamesFromLevel1Excel(app, selectedPath);
+                [app.FieldDisplayNames, app.FieldUnits] = readFieldNamesFromLevel1Excel(app, selectedPath);
 
                 % 将GUI窗口置顶
                 figure(app.UIFigure);
@@ -1946,14 +1946,25 @@ classdef MatViewerTool < matlab.apps.AppBase
                         
                         % 格式化字段值
                         [valueStr, dataType] = formatFieldValueForTable(app, subValue);
-                        
+
                         % 使用从Excel读取的字段名称
                         if rowIndex <= length(app.FieldDisplayNames)
                             tableData{rowIndex, 1} = app.FieldDisplayNames{rowIndex};
                         else
                             tableData{rowIndex, 1} = sprintf('字段%d', rowIndex);
                         end
-                        
+
+                        % 追加单位到字段值（如果有的话）
+                        if isfield(app, 'FieldUnits') && rowIndex <= length(app.FieldUnits) && ~isempty(app.FieldUnits{rowIndex})
+                            % 只对数值类型追加单位
+                            if strcmp(dataType, 'double') || strcmp(dataType, 'int') || strcmp(dataType, 'uint') || ...
+                               strcmp(dataType, 'int8') || strcmp(dataType, 'int16') || strcmp(dataType, 'int32') || strcmp(dataType, 'int64') || ...
+                               strcmp(dataType, 'uint8') || strcmp(dataType, 'uint16') || strcmp(dataType, 'uint32') || strcmp(dataType, 'uint64') || ...
+                               strcmp(dataType, 'single')
+                                valueStr = [valueStr, app.FieldUnits{rowIndex}];
+                            end
+                        end
+
                         tableData{rowIndex, 2} = subFieldName;  % 只显示字段名，不带frame_info前缀
                         tableData{rowIndex, 3} = valueStr;
                         tableData{rowIndex, 4} = dataType;
@@ -1963,13 +1974,24 @@ classdef MatViewerTool < matlab.apps.AppBase
                 else
                     % 其他字段正常显示
                     [valueStr, dataType] = formatFieldValueForTable(app, value);
-                    
+
                     if rowIndex <= length(app.FieldDisplayNames)
                         tableData{rowIndex, 1} = app.FieldDisplayNames{rowIndex};
                     else
                         tableData{rowIndex, 1} = sprintf('字段%d', rowIndex);
                     end
-                    
+
+                    % 追加单位到字段值（如果有的话）
+                    if isfield(app, 'FieldUnits') && rowIndex <= length(app.FieldUnits) && ~isempty(app.FieldUnits{rowIndex})
+                        % 只对数值类型追加单位
+                        if strcmp(dataType, 'double') || strcmp(dataType, 'int') || strcmp(dataType, 'uint') || ...
+                           strcmp(dataType, 'int8') || strcmp(dataType, 'int16') || strcmp(dataType, 'int32') || strcmp(dataType, 'int64') || ...
+                           strcmp(dataType, 'uint8') || strcmp(dataType, 'uint16') || strcmp(dataType, 'uint32') || strcmp(dataType, 'uint64') || ...
+                           strcmp(dataType, 'single')
+                            valueStr = [valueStr, app.FieldUnits{rowIndex}];
+                        end
+                    end
+
                     tableData{rowIndex, 2} = fieldName;
                     tableData{rowIndex, 3} = valueStr;
                     tableData{rowIndex, 4} = dataType;
@@ -5431,12 +5453,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             end
         end
         
-        function fieldNames = readFieldNamesFromLevel1Excel(app, currentPath)
-            % 从Excel文件读取字段显示名称
+        function [fieldNames, fieldUnits] = readFieldNamesFromLevel1Excel(app, currentPath)
+            % 从Excel文件读取字段显示名称和单位
             % 优先读取当前目录的Excel，如果没有则读取第一级目录的Excel
             % 读取Excel第2行从B列开始的所有单元格（B2, C2, D2...）
+            % 同时提取字段名中的单位（如"高度(m)"中的"(m)"）
 
             fieldNames = {};
+            fieldUnits = {};  % 存储每个字段的单位
 
             if isempty(app.CurrentDataPath) || isempty(currentPath)
                 return;
@@ -5538,14 +5562,25 @@ classdef MatViewerTool < matlab.apps.AppBase
 
                     % 如果非空，添加到列表
                     if ~isEmpty
+                        fieldNameStr = '';
                         if isnumeric(cellValue)
-                            fieldNames{end+1} = num2str(cellValue);
+                            fieldNameStr = num2str(cellValue);
                         elseif ischar(cellValue) || isstring(cellValue)
-                            fieldNames{end+1} = char(cellValue);
+                            fieldNameStr = char(cellValue);
                         else
                             % 其他类型转换为字符串
-                            fieldNames{end+1} = char(string(cellValue));
+                            fieldNameStr = char(string(cellValue));
                         end
+
+                        % 提取单位（括号中的内容，如"高度(m)"中的"(m)"）
+                        unitStr = '';
+                        unitMatch = regexp(fieldNameStr, '\([^)]+\)', 'match');
+                        if ~isempty(unitMatch)
+                            unitStr = unitMatch{1};  % 保留完整括号，如"(m)"
+                        end
+
+                        fieldNames{end+1} = fieldNameStr;
+                        fieldUnits{end+1} = unitStr;
                     end
                 end
 
