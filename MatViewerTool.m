@@ -5750,6 +5750,14 @@ classdef MatViewerTool < matlab.apps.AppBase
                     return;
                 end
 
+                % 创建输出目录
+                [dataPath, ~, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+                outputDir = fullfile(dataPath, prepConfig.name);
+                if ~exist(outputDir, 'dir')
+                    mkdir(outputDir);
+                end
+                [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+
                 % 调用默认脚本
                 [scriptDir, scriptName, ~] = fileparts(scriptFile);
 
@@ -5804,6 +5812,36 @@ classdef MatViewerTool < matlab.apps.AppBase
                 processedData.complex_matrix = processedMatrix;
                 processedData.preprocessing_info = prepConfig;
                 processedData.preprocessing_time = datetime('now');
+
+                % 保存额外的输出信息（如果有）
+                if ~isempty(fieldnames(additionalOutputs))
+                    processedData.additional_outputs = additionalOutputs;
+                end
+
+                % 准备保存数据：包含绘图变量、帧信息和额外输出
+                saveData = struct();
+                saveData.complex_matrix = processedMatrix;
+                if isfield(currentData, 'frame_info')
+                    saveData.frame_info = currentData.frame_info;
+                end
+                % 添加额外输出
+                if ~isempty(fieldnames(additionalOutputs))
+                    saveData.additional_outputs = additionalOutputs;
+                end
+
+                % 保存到本地文件
+                outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
+                save(outputFile, '-struct', 'saveData');
+
+                % 检查输出目录是否有.fig文件
+                figFiles = dir(fullfile(outputDir, '*.fig'));
+                if ~isempty(figFiles)
+                    % 找到最新的.fig文件
+                    [~, idx] = max([figFiles.datenum]);
+                    figFilePath = fullfile(outputDir, figFiles(idx).name);
+                    % 保存.fig文件路径到processedData
+                    processedData.figure_file = figFilePath;
+                end
 
                 % 初始化预处理结果缓存
                 if isempty(app.PreprocessingResults)
