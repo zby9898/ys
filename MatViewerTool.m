@@ -5909,6 +5909,9 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 更新多视图显示
                 updateMultiView(app);
 
+                % 更新预处理控件状态（包括清除按钮）
+                updatePreprocessingControls(app);
+
             catch ME
                 uialert(app.UIFigure, sprintf('加载默认预处理失败：\n%s', ME.message), '错误');
             end
