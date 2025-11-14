@@ -83,6 +83,7 @@ classdef MatViewerTool < matlab.apps.AppBase
         % 域Excel字段
         DomainFieldList         cell
         FieldDisplayNames       cell        % 从第一级目录Excel读取的字段显示名称
+        FieldUnits              cell        % 从字段名中提取的单位（如"(m)"）
 
         % 预处理相关
         PreprocessingList       cell        % 预处理配置列表
@@ -126,6 +127,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.AutoPlayInterval = 5;  % 5秒
             app.DomainFieldList = {};
             app.FieldDisplayNames = {};
+            app.FieldUnits = {};
 
             app.PreprocessingList = {};
             app.PreprocessingResults = {};
@@ -1955,14 +1957,8 @@ classdef MatViewerTool < matlab.apps.AppBase
                         end
 
                         % 追加单位到字段值（如果有的话）
-                        if isfield(app, 'FieldUnits') && rowIndex <= length(app.FieldUnits) && ~isempty(app.FieldUnits{rowIndex})
-                            % 只对数值类型追加单位
-                            if strcmp(dataType, 'double') || strcmp(dataType, 'int') || strcmp(dataType, 'uint') || ...
-                               strcmp(dataType, 'int8') || strcmp(dataType, 'int16') || strcmp(dataType, 'int32') || strcmp(dataType, 'int64') || ...
-                               strcmp(dataType, 'uint8') || strcmp(dataType, 'uint16') || strcmp(dataType, 'uint32') || strcmp(dataType, 'uint64') || ...
-                               strcmp(dataType, 'single')
-                                valueStr = [valueStr, app.FieldUnits{rowIndex}];
-                            end
+                        if rowIndex <= length(app.FieldUnits) && ~isempty(app.FieldUnits{rowIndex})
+                            valueStr = [valueStr, app.FieldUnits{rowIndex}];
                         end
 
                         tableData{rowIndex, 2} = subFieldName;  % 只显示字段名，不带frame_info前缀
@@ -1982,14 +1978,8 @@ classdef MatViewerTool < matlab.apps.AppBase
                     end
 
                     % 追加单位到字段值（如果有的话）
-                    if isfield(app, 'FieldUnits') && rowIndex <= length(app.FieldUnits) && ~isempty(app.FieldUnits{rowIndex})
-                        % 只对数值类型追加单位
-                        if strcmp(dataType, 'double') || strcmp(dataType, 'int') || strcmp(dataType, 'uint') || ...
-                           strcmp(dataType, 'int8') || strcmp(dataType, 'int16') || strcmp(dataType, 'int32') || strcmp(dataType, 'int64') || ...
-                           strcmp(dataType, 'uint8') || strcmp(dataType, 'uint16') || strcmp(dataType, 'uint32') || strcmp(dataType, 'uint64') || ...
-                           strcmp(dataType, 'single')
-                            valueStr = [valueStr, app.FieldUnits{rowIndex}];
-                        end
+                    if rowIndex <= length(app.FieldUnits) && ~isempty(app.FieldUnits{rowIndex})
+                        valueStr = [valueStr, app.FieldUnits{rowIndex}];
                     end
 
                     tableData{rowIndex, 2} = fieldName;
