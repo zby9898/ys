@@ -5655,12 +5655,15 @@ classdef MatViewerTool < matlab.apps.AppBase
 
                         % 提取单位（括号中的内容，如"高度(m)"中的"(m)"）
                         unitStr = '';
+                        cleanFieldName = fieldNameStr;  % 默认使用原字段名
                         unitMatch = regexp(fieldNameStr, '\([^)]+\)', 'match');
                         if ~isempty(unitMatch)
                             unitStr = unitMatch{1};  % 保留完整括号，如"(m)"
+                            % 从字段名中移除单位部分，如"高度(m)" -> "高度"
+                            cleanFieldName = regexprep(fieldNameStr, '\([^)]+\)', '');
                         end
 
-                        fieldNames{end+1} = fieldNameStr;
+                        fieldNames{end+1} = cleanFieldName;
                         fieldUnits{end+1} = unitStr;
                     end
                 end
