@@ -906,14 +906,14 @@ classdef MatViewerTool < matlab.apps.AppBase
         function selectDataPath(app)
             % 选择数据路径
             folder = uigetdir(app.CurrentDataPath, '选择数据根目录');
+
+            % 文件选择后置顶UI（无论是否取消）
+            figure(app.UIFigure);
+
             if folder ~= 0
                 app.CurrentDataPath = folder;
                 updatePathDisplay(app);
                 refreshDirectory(app);
-
-                % 将GUI窗口置顶
-                figure(app.UIFigure);
-                drawnow;
             end
         end
         
