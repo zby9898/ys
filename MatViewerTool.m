@@ -4259,10 +4259,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                     end
                                 end
 
-                                % 添加输出目录和文件名到参数中（供脚本使用）
-                                actualParams.output_dir = outputDir;
-                                actualParams.file_name = originalName;
-
+                                % 调用脚本函数
                                 scriptFunc = str2func(scriptName);
                                 scriptOutput = scriptFunc(inputMatrix, actualParams);
                                 
@@ -4428,14 +4425,6 @@ classdef MatViewerTool < matlab.apps.AppBase
                     uialert(app.UIFigure, '当前数据不包含complex_matrix字段！', '错误', 'Icon', 'error');
                     return;
                 end
-                
-                % 创建输出目录
-                [dataPath, ~, ~] = fileparts(app.MatFiles{app.CurrentIndex});
-                outputDir = fullfile(dataPath, prepConfig.name);
-                if ~exist(outputDir, 'dir')
-                    mkdir(outputDir);
-                end
-                [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
 
                 % 执行预处理
                 if strcmp(prepConfig.scriptPath, 'default')
@@ -4463,7 +4452,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                         % 根据参数类型转换
                                         if isfield(prepConfig, 'paramTypes') && isfield(prepConfig.paramTypes, paramName)
                                             paramType = prepConfig.paramTypes.(paramName);
-                                         output_dir   actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
+                                            actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
                                         else
                                             % 没有类型信息，直接使用
                                             actualParams.(paramName) = rawValue;
@@ -4472,10 +4461,6 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
-
-                        % 添加输出目录和文件名到参数中（供脚本使用）
-                        actualParams.output_dir = outputDir;
-                        actualParams.file_name = originalName;
 
                         % 调用脚本函数
                         scriptFunc = str2func(scriptName);
@@ -4720,17 +4705,6 @@ classdef MatViewerTool < matlab.apps.AppBase
                     try
                         % 准备参数（外部文件没有帧信息，只使用默认参数）
                         actualParams = prepConfig.params;
-
-                        % 获取输出目录和文件名
-                        [filePath, fileName, ~] = fileparts(inputFilePath);
-                        outputDir = fullfile(filePath, prepConfig.name);
-                        if ~exist(outputDir, 'dir')
-                            mkdir(outputDir);
-                        end
-
-                        % 添加输出目录和文件名到参数中（供脚本使用）
-                        actualParams.output_dir = outputDir;
-                        actualParams.file_name = fileName;
 
                         % 如果外部文件包含frame_info，也尝试使用
                         if isfield(fileData, 'frame_info') && ...
