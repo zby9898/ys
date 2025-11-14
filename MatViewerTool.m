@@ -5520,7 +5520,7 @@ classdef MatViewerTool < matlab.apps.AppBase
 
             % 读取Excel文件
             try
-                % 读取Excel数据 (使用 readcell 替代 xlsread)
+                % 读取第2行数据 (使用 readcell 替代 xlsread)
                 raw = readcell(excelPath);
 
                 if size(raw, 1) < 2
@@ -5529,12 +5529,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                     return;
                 end
 
-                % 读取第1行（字段显示名称，包含单位），从第2列（B列）开始
-                row1Data = raw(1, 2:end);
+                % 读取第2行，从第2列（B列）开始
+                row2Data = raw(2, 2:end);
 
-                % 提取非空单元格的值和单位
-                for i = 1:length(row1Data)
-                    cellValue = row1Data{i};
+                % 提取非空单元格的值
+                for i = 1:length(row2Data)
+                    cellValue = row2Data{i};
 
                     % 检查是否为空
                     isEmpty = false;
