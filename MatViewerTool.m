@@ -1295,7 +1295,10 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 打开文件选择对话框
             [selectedFiles, selectedPath] = uigetfile('*.mat', '选择MAT文件', ...
                 startPath, 'MultiSelect', 'on');
-            
+
+            % 文件选择后置顶UI（无论是否取消）
+            figure(app.UIFigure);
+
             if isequal(selectedFiles, 0)
                 return;
             end
@@ -2062,7 +2065,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             dlg = uifigure('Name', ['结构体详情: ' structName], ...
                 'Position', [100 100 500 400], ...
                 'WindowStyle', 'modal');
-            
+
+            % 居中显示弹窗
+            movegui(dlg, 'center');
+
+            % 置顶弹窗
+            figure(app.UIFigure);  % 先置顶主UI
+            figure(dlg);           % 再置顶弹窗
+
             % 创建布局
             mainLayout = uigridlayout(dlg, [2, 1]);
             mainLayout.RowHeight = {'1x', 50};
@@ -2767,7 +2777,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 创建新窗口
             fig = uifigure('Name', '时域波形图');
             fig.Position = [100 100 1000 600];
-            
+
+            % 居中显示窗口
+            movegui(fig, 'center');
+
+            % 置顶窗口
+            figure(app.UIFigure);  % 先置顶主UI
+            figure(fig);           % 再置顶新窗口
+
             ax = uiaxes(fig);
             ax.Position = [80 80 850 480];
             
@@ -2804,7 +2821,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 创建新窗口
             fig = uifigure('Name', '原图放大');
             fig.Position = [100 100 1000 800];
-            
+
+            % 居中显示窗口
+            movegui(fig, 'center');
+
+            % 置顶窗口
+            figure(app.UIFigure);  % 先置顶主UI
+            figure(fig);           % 再置顶新窗口
+
             ax = uiaxes(fig);
             ax.Position = [80 80 850 680];
             
@@ -2848,7 +2872,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 创建新窗口
             fig = uifigure('Name', 'dB图放大');
             fig.Position = [100 100 1000 800];
-            
+
+            % 居中显示窗口
+            movegui(fig, 'center');
+
+            % 置顶窗口
+            figure(app.UIFigure);  % 先置顶主UI
+            figure(fig);           % 再置顶新窗口
+
             ax = uiaxes(fig);
             ax.Position = [80 80 850 680];
             
@@ -2964,7 +2995,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 创建新窗口
             fig = uifigure('Name', 'SAR图');
             fig.Position = [100 100 1000 800];
-            
+
+            % 居中显示窗口
+            movegui(fig, 'center');
+
+            % 置顶窗口
+            figure(app.UIFigure);  % 先置顶主UI
+            figure(fig);           % 再置顶新窗口
+
             ax = uiaxes(fig);
             ax.Position = [80 80 850 680];
             
@@ -3010,7 +3048,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 创建详情对话框
             fig = uifigure('Name', sprintf('字段详情: %s', fieldName));
             fig.Position = [200 200 600 400];
-            
+
+            % 居中显示窗口
+            movegui(fig, 'center');
+
+            % 置顶窗口
+            figure(app.UIFigure);  % 先置顶主UI
+            figure(fig);           % 再置顶新窗口
+
             layout = uigridlayout(fig, [3, 1]);
             layout.RowHeight = {30, '1x', 40};
             
@@ -3115,6 +3160,13 @@ classdef MatViewerTool < matlab.apps.AppBase
             % 创建对话框
             dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 680]);
             dlg.WindowStyle = 'modal';
+
+            % 居中显示弹窗
+            movegui(dlg, 'center');
+
+            % 置顶弹窗
+            figure(app.UIFigure);  % 先置顶主UI
+            figure(dlg);           % 再置顶预处理弹窗
 
             % 添加帮助按钮到对话框右上角
             helpBtn = uibutton(dlg, 'push');
@@ -3412,7 +3464,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 浏览处理对象文件
                 [file, path] = uigetfile({'*.mat', 'MAT文件 (*.mat)'}, '选择处理对象文件');
 
-                % 文件选择后置顶窗口
+                % 文件选择后置顶窗口（无论是否取消）
                 figure(app.UIFigure);  % 先置顶主UI
                 figure(dlg);           % 再置顶预处理弹窗
 
