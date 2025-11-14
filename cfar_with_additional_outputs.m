@@ -109,7 +109,6 @@ function output_data = cfar_with_additional_outputs(input_data, params)
         ax = axes('Parent', fig);
         imagesc(ax, abs(output_data.complex_matrix));
         axis(ax, 'on');
-        colorbar(ax);
         title(ax, sprintf('CFAR检测结果 - 方法:%s, 阈值因子:%.1f', method, threshold_factor));
         xlabel(ax, '距离单元');
         ylabel(ax, '多普勒单元');

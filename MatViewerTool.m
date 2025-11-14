@@ -4357,7 +4357,18 @@ classdef MatViewerTool < matlab.apps.AppBase
                 app.AddPrepBtn.Enable = 'off';
             end
 
-            if numPreps > 0
+            % 检查是否有任何预处理结果（包括CFAR、非相干积累、自定义）
+            hasAnyPrep = false;
+            if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
+                for i = 2:4  % 第2列=CFAR, 第3列=非相干积累, 第4列=自定义
+                    if ~isempty(app.PreprocessingResults{app.CurrentIndex, i})
+                        hasAnyPrep = true;
+                        break;
+                    end
+                end
+            end
+
+            if hasAnyPrep || numPreps > 0
                 app.ClearPrepBtn.Enable = 'on';
             else
                 app.ClearPrepBtn.Enable = 'off';
