@@ -5097,40 +5097,52 @@ classdef MatViewerTool < matlab.apps.AppBase
                 end
             end
             
-            % 优先使用 additional_outputs 变量动态生成图形（替换原来的.fig文件显示）
-            if isfield(data, 'additional_outputs') && ~isempty(data.additional_outputs)
-                % 从变量读取数据，动态生成图形，替换原来加载.fig文件的逻辑
+            % 优先检查是否有cached_figure（figure缓存）
+            if isfield(data, 'additional_outputs') && isfield(data.additional_outputs, 'cached_figure')
+                % 从缓存的figure复制内容到UI axes
                 try
                     % 清空当前axes
                     cla(ax);
 
-                    addOutputs = data.additional_outputs;
+                    cachedFig = data.additional_outputs.cached_figure;
 
-                    % 根据预处理类型动态生成相应的图形（还原原来.fig的显示效果）
-                    if isfield(addOutputs, 'method')  % CFAR检测
-                        % 从变量还原CFAR.fig的显示内容
-                        if isfield(data, 'complex_matrix')
-                            % 显示CFAR检测后的结果
-                            imagesc(ax, abs(data.complex_matrix));
-                            axis(ax, 'on');
-                            colorbar(ax);
-                            xlabel(ax, '距离单元');
-                            ylabel(ax, '多普勒单元');
+                    % 获取cached figure中的axes
+                    figAxes = findobj(cachedFig, 'Type', 'axes');
+
+                    if ~isempty(figAxes)
+                        % 获取第一个axes
+                        sourceAx = figAxes(1);
+
+                        % 复制所有图形对象
+                        copyobj(allchild(sourceAx), ax);
+
+                        % 复制axes属性
+                        ax.XLim = sourceAx.XLim;
+                        ax.YLim = sourceAx.YLim;
+                        if ~isempty(sourceAx.ZLim)
+                            ax.ZLim = sourceAx.ZLim;
                         end
-                    else
-                        % 其他预处理：显示complex_matrix
-                        if isfield(data, 'complex_matrix')
-                            imagesc(ax, abs(data.complex_matrix));
-                            axis(ax, 'on');
+                        ax.XLabel.String = sourceAx.XLabel.String;
+                        ax.YLabel.String = sourceAx.YLabel.String;
+                        if ~isempty(sourceAx.ZLabel.String)
+                            ax.ZLabel.String = sourceAx.ZLabel.String;
+                        end
+
+                        % 复制colormap
+                        if ~isempty(sourceAx.Colormap)
+                            colormap(ax, sourceAx.Colormap);
+                        end
+
+                        % 检查是否有colorbar，如果有则复制
+                        cb = findobj(cachedFig, 'Type', 'colorbar');
+                        if ~isempty(cb)
                             colorbar(ax);
-                            xlabel(ax, '距离单元');
-                            ylabel(ax, '多普勒单元');
                         end
                     end
 
                 catch ME
-                    % 如果动态生成失败，回退到显示complex_matrix
-                    warning('从变量生成图形失败：%s，将显示复数矩阵', ME.message);
+                    % 如果使用缓存失败，回退到显示complex_matrix
+                    warning('使用cached_figure失败：%s，将显示复数矩阵', ME.message);
 
                     if ~isfield(data, 'complex_matrix')
                         return;

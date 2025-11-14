@@ -105,6 +105,26 @@ function output_data = default_cfar(input_data, params)
     output_data.apply_log = apply_log;  % 是否应用了对数变换
     output_data.timestamp = datetime('now');  % 处理时间戳
 
+    % 创建figure并缓存（不保存到文件）
+    try
+        fig = figure('Visible', 'off');
+
+        % 绘制CFAR检测结果
+        ax = axes('Parent', fig);
+        imagesc(ax, abs(output_data.complex_matrix));
+        axis(ax, 'on');
+        colorbar(ax);
+        title(ax, sprintf('CFAR检测结果 - 方法:%s, 阈值因子:%.1f', method, threshold_factor));
+        xlabel(ax, '距离单元');
+        ylabel(ax, '多普勒单元');
+
+        % 将figure缓存到变量中
+        output_data.cached_figure = fig;
+
+    catch ME
+        warning('创建figure失败：%s', ME.message);
+    end
+
 end
 
 function value = getParam(params, name, default_value)
