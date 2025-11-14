@@ -4463,7 +4463,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                         % 根据参数类型转换
                                         if isfield(prepConfig, 'paramTypes') && isfield(prepConfig.paramTypes, paramName)
                                             paramType = prepConfig.paramTypes.(paramName);
-                                         output_dir   actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
+                                            actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
                                         else
                                             % 没有类型信息，直接使用
                                             actualParams.(paramName) = rawValue;
@@ -5836,6 +5836,14 @@ classdef MatViewerTool < matlab.apps.AppBase
                     return;
                 end
 
+                % 创建输出目录
+                [dataPath, ~, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+                outputDir = fullfile(dataPath, prepConfig.name);
+                if ~exist(outputDir, 'dir')
+                    mkdir(outputDir);
+                end
+                [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+
                 % 调用默认脚本
                 [scriptDir, scriptName, ~] = fileparts(scriptFile);
 
@@ -5843,6 +5851,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                 oldPath = addpath(scriptDir);
 
                 try
+                    % 添加输出目录和文件名到参数中（供脚本使用）
+                    params.output_dir = outputDir;
+                    params.file_name = originalName;
+
                     % 调用脚本函数
                     scriptFunc = str2func(scriptName);
                     processedMatrix = scriptFunc(inputMatrix, params);
@@ -5895,6 +5907,21 @@ classdef MatViewerTool < matlab.apps.AppBase
                 if ~isempty(fieldnames(additionalOutputs))
                     processedData.additional_outputs = additionalOutputs;
                 end
+
+                % 准备保存数据：包含绘图变量、帧信息和额外输出
+                saveData = struct();
+                saveData.complex_matrix = processedMatrix;
+                if isfield(currentData, 'frame_info')
+                    saveData.frame_info = currentData.frame_info;
+                end
+                % 添加额外输出
+                if ~isempty(fieldnames(additionalOutputs))
+                    saveData.additional_outputs = additionalOutputs;
+                end
+
+                % 保存到本地文件
+                outputFile = fullfile(outputDir, sprintf('%s_processed.mat', originalName));
+                save(outputFile, '-struct', 'saveData');
 
                 % 初始化预处理结果缓存
                 if isempty(app.PreprocessingResults)
