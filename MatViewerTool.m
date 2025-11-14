@@ -4259,6 +4259,9 @@ classdef MatViewerTool < matlab.apps.AppBase
                                     end
                                 end
 
+                                % 添加文件名到参数中（供脚本使用）
+                                actualParams.file_name = originalName;
+
                                 % 调用脚本函数
                                 scriptFunc = str2func(scriptName);
                                 scriptOutput = scriptFunc(inputMatrix, actualParams);
@@ -4461,6 +4464,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
+
+                        % 添加文件名到参数中（供脚本使用）
+                        [~, originalName, ~] = fileparts(app.MatFiles{app.CurrentIndex});
+                        actualParams.file_name = originalName;
 
                         % 调用脚本函数
                         scriptFunc = str2func(scriptName);
@@ -4724,6 +4731,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
+
+                        % 添加文件名到参数中（供脚本使用）
+                        [~, fileName, ~] = fileparts(inputFilePath);
+                        actualParams.file_name = fileName;
 
                         scriptFunc = str2func(scriptName);
                         processedMatrix = scriptFunc(inputMatrix, actualParams);
