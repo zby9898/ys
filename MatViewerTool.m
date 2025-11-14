@@ -4221,10 +4221,6 @@ classdef MatViewerTool < matlab.apps.AppBase
                                     end
                                 end
 
-                                % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
-                                actualParams.output_dir = outputDir;
-                                actualParams.file_name = originalName;
-
                                 scriptFunc = str2func(scriptName);
                                 scriptOutput = scriptFunc(inputMatrix, actualParams);
                                 
@@ -4424,7 +4420,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                                         % 根据参数类型转换
                                         if isfield(prepConfig, 'paramTypes') && isfield(prepConfig.paramTypes, paramName)
                                             paramType = prepConfig.paramTypes.(paramName);
-                                         output_dir   actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
+                                            actualParams.(paramName) = app.convertParamValue(rawValue, paramType);
                                         else
                                             % 没有类型信息，直接使用
                                             actualParams.(paramName) = rawValue;
@@ -4433,10 +4429,6 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 end
                             end
                         end
-
-                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
-                        actualParams.output_dir = outputDir;
-                        actualParams.file_name = originalName;
 
                         % 调用脚本函数
                         scriptFunc = str2func(scriptName);
@@ -4693,10 +4685,6 @@ classdef MatViewerTool < matlab.apps.AppBase
                         if ~exist(outputDir, 'dir')
                             mkdir(outputDir);
                         end
-
-                        % 添加输出目录和文件名到参数中（供脚本保存.fig文件使用）
-                        actualParams.output_dir = outputDir;
-                        actualParams.file_name = fileName;
 
                         % 如果外部文件包含frame_info，也尝试使用
                         if isfield(fileData, 'frame_info') && ...
